@@ -10,7 +10,7 @@ Built for CPE334 Software Engineering final project, KMUTT.
 - **Backend / DB:** Supabase (Postgres + Auth + Storage)
 - **Mobile:** Capacitor (Android/iOS build support)
 - **UI Components:** shadcn/ui
-- **Deployment:** Vercel (Web), App Stores (Mobile)
+- **Deployment:** Vercel (Web), App Stores (Mobile) (Theoretically)
 
 ---
 
@@ -65,6 +65,11 @@ git commit -m "Add your feature"
 (You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.)
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+### To Pull
+```git
+git fetch
+git pull
+```
 ## 📝 Notes
 
 Make sure Node.js v18+ is installed.
