@@ -68,6 +68,7 @@ git commit -m "Add your feature"
 3. Push and open a PR.
 
 (You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.)
+
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
 ### To Pull
@@ -93,3 +94,14 @@ To learn more about Next.js, take a look at the following resources:
 - [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Team Members
+| ID | Name | Username|
+| -- | ---- | -------|
+| 66070503426 | Thanakorn Thavornlertprasert |  autohiden      |
+| 66070503447 | Pattaradanai Chotirospong    |  bgpattaradanai |
+| 66070503450 | Phudid Pimpasan              |  jjuaon         |
+| 66070503458 | Sumeth Chotana               |  Pondcod        |
+| 66070503470 | Thanatat Aunjatturaporn      |  Slozzzzy       |
+| 66070503478 | Methat Laosuksakul           |  BankLSK        |
+| 66070503485 | Suwijak Phopromsri           |  mossuwijak     |
