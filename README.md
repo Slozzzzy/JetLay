@@ -32,7 +32,7 @@ pnpm install
 ```
 ### 3. Setup Supabase
 - Copy the Project URL and anon/public key from Project Settings → API.
-- Add them into .env.local:
+- Add them into .env.local: (https://supabase.com/dashboard/project/xiakmjiawpnktgfkbkqn/settings/api-keys)
 ```env
 NEXT_PUBLIC_SUPABASE_URL=your_url_here
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_key_here
