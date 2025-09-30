@@ -18,7 +18,8 @@ Built for CPE334 Software Engineering final project, KMUTT.
 
 ### 1. Clone the repository
 ```bash
-git clone git@github.com:Slozzzzy/JetLay.git
+git clone git@github.com:Slozzzzy/JetLay.git # if you're using SSH
+git clone https://github.com/Slozzzzy/JetLay.git #if you're using HTML
 cd JetLay
 ```
 
