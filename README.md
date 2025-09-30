@@ -10,7 +10,7 @@ Built for CPE334 Software Engineering final project, KMUTT.
 - **Backend / DB:** Supabase (Postgres + Auth + Storage)
 - **Mobile:** Capacitor (Android/iOS build support)
 - **UI Components:** shadcn/ui
-- **Deployment:** Vercel (Web), App Stores (Mobile) (Theoretically)
+- **Deployment:** Vercel (Web), App Stores/ Google Play (Mobile) (Theoretically)
 
 ---
 
@@ -26,9 +26,9 @@ cd JetLay
 ### 2. Install dependencies
 
 ```bash
-pnpm install
+npm install
 # or yarn install
-# or npm install
+# or pnpm install
 ```
 ### 3. Setup Supabase
 - Copy the Project URL and anon/public key from Project Settings → API.
@@ -37,6 +37,7 @@ pnpm install
 NEXT_PUBLIC_SUPABASE_URL=your_url_here
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_key_here
 ```
+
 ### 4. Run the dev server
 ```bash
 npm run dev
@@ -45,12 +46,15 @@ npm run dev
 
 ### 📱 Mobile (Capacitor)
 ```bash
-pnpm build
+npm run build
 npx cap sync
 npx cap run android
 # or
 npx cap run ios
+
+#Notes : Need Xcode/ Android Studio installed to see live dev 
 ```
+
 ### 🤝 Contributing
 
 1. Create a new branch:
@@ -71,13 +75,14 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 git fetch
 git pull
 ```
+
 ## 📝 Notes
 
 Make sure Node.js v18+ is installed.
 
 If deploying to Vercel, link your Supabase project in Environment Variables.
 
-For mobile, you’ll need Android Studio or Xcode installed.
+**For mobile development, you’ll need Android Studio or Xcode installed.**
 
 
 ## Learn More
