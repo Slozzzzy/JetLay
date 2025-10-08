@@ -1,32 +1,35 @@
 'use client'
 
-import { useSearchParams, useRouter } from 'next/navigation'
 import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 
 export default function AuthCallback() {
   const router = useRouter()
-  const params = useSearchParams()
-  const event = params.get('event')
 
   useEffect(() => {
     const handleRedirect = async () => {
-      if (event === 'logout') {
-        console.log('✅ User logged out')
-        router.push('/login')
+      const { data, error } = await supabase.auth.getSession()
+      if (error) {
+        console.error('Callback error:', error)
+        router.push('/')
         return
       }
 
-      const { data, error } = await supabase.auth.getSession()
       if (data?.session) {
-        router.push('/profile')
+        console.log('Logged in user:', data.session.user)
+        router.push('/') // go back to your main app
       } else {
-        router.push('/login')
+        router.push('/')
       }
     }
 
     handleRedirect()
-  }, [router, event])
+  }, [router])
 
-  return <p>Loading...</p>
+  return (
+    <div className="flex items-center justify-center h-screen">
+      <p className="text-lg text-gray-700">Redirecting...</p>
+    </div>
+  )
 }
