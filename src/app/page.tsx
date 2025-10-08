@@ -14,6 +14,7 @@ type HeaderProps = {
   onBack: () => void;
   showProfileIcon: boolean;
   showScreen: (id: string) => void;
+  hideBackButton?: boolean; // <-- Added optional prop
 };
 
 
@@ -24,7 +25,7 @@ const CustomAlert: React.FC<CustomAlertProps> = ({ message, onClose }) => {
   if (!message) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-30 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-transparent z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
       <div className="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full text-center">
         <p className="mb-4 text-lg font-semibold text-gray-900">{message}</p>
         <button
@@ -369,7 +370,7 @@ const App = () => {
                 0%, 100% { transform: translate(0, 0); } 10% { transform: translate(-5%, -10%); } 20% { transform: translate(-15%, 5%); } 30% { transform: translate(7%, -25%); } 40% { transform: translate(-5%, 25%); } 50% { transform: translate(-15%, 10%); } 60% { transform: translate(15%, 0%); } 70% { transform: translate(0%, 15%); } 80% { transform: translate(3%, 35%); } 90% { transform: translate(-10%, 10%); }
               }
             `}</style>
-            <Header title="Hello, User" onBack={() => showScreen('welcomeChoice')} showProfileIcon={showProfileIcon} showScreen={showScreen} />
+            <Header title="Hello, User" onBack={() => {}} showProfileIcon={showProfileIcon} showScreen={showScreen} hideBackButton={true} />
             <div className="p-6 flex-1">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-2">
                 {dashboardCards.map((card) => (
@@ -656,15 +657,17 @@ const App = () => {
 
 // --- Sub-Components ---
 
-const Header: React.FC<HeaderProps> = ({ title, onBack, showProfileIcon, showScreen }) => (
+const Header: React.FC<HeaderProps> = ({ title, onBack, showProfileIcon, showScreen, hideBackButton }) => (
   <header className="relative flex items-center justify-between p-4 bg-white border-b border-gray-200 shadow-md sticky top-0 z-10">
     <div className="flex items-center gap-3">
-      <button
-        className="text-xl font-bold text-gray-500 hover:text-gray-700 transition"
-        onClick={onBack}
-      >
-        &larr;
-      </button>
+      {!hideBackButton && (
+        <button
+          className="text-xl font-bold text-gray-500 hover:text-gray-700 transition"
+          onClick={onBack}
+        >
+          &larr;
+        </button>
+      )}
       <Image
         width={40}
         height={40}
