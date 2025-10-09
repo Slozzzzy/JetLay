@@ -1,6 +1,8 @@
 "use client";
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Image from 'next/image';
+import { supabase } from '@/lib/supabaseClient'
+
 
 // --- Type Definitions for Component Props ---
 
@@ -65,6 +67,33 @@ const App = () => {
   const showScreen = useCallback((id: string) => { // Added type for 'id'
     setCurrentScreen(id);
   }, []);
+
+  // Check Supabase Session Automatically
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data?.session?.user) {
+        console.log('Already logged in:', data.session.user);
+        setCurrentScreen('dashboard'); // Automatically go to dashboard
+      }
+    };
+
+    checkSession();
+
+    // Listen for login/logout
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        console.log('Auth state: logged in');
+        setCurrentScreen('dashboard');
+      } else {
+        console.log('Auth state: logged out');
+        setCurrentScreen('welcomeChoice');
+      }
+    });
+
+    return () => listener.subscription.unsubscribe();
+  }, []);
+  
   
   // Auto-navigate from splash screen
   useEffect(() => {
@@ -139,6 +168,29 @@ const App = () => {
     setCurrentMonth(newMonth);
     setCurrentYear(newYear);
   };
+
+  // --- Google OAuth Login Function ---
+  const handleGoogleLogin = async () => {
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`, // after login redirect
+        },
+      })
+      if (error) {
+        console.error('Google login error:', error.message)
+        showAlert('Google sign-in failed. Please try again.')
+      } else {
+        console.log('Redirecting to Google login...', data)
+      }
+    } catch (err) {
+      console.error('Unexpected error:', err)
+      showAlert('Unexpected error occurred. Please try again.')
+    }
+  }
+
+
   
   // --- Screen Definitions (JSX) ---
 
@@ -236,10 +288,20 @@ const App = () => {
                 <button className="w-full py-3 mb-4 text-white font-bold text-lg rounded-xl shadow-lg transition duration-200" style={{ background: 'linear-gradient(90deg, #d8b4fe, #fbcfe8)', color: '#1e1b4b' }} onClick={() => showScreen('verifyEmail')}>
                   Sign Up
                 </button>
-                <button className="flex items-center justify-center w-full py-3 bg-white border border-gray-300 rounded-lg font-semibold text-gray-900 hover:bg-gray-50 transition duration-150">
-                  <Image src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg" alt="Google G Logo" width={24} height={24} className="mr-3" />
-                  Sign up with Google
+                <button
+                  onClick={handleGoogleLogin}
+                  className="flex items-center justify-center w-full py-3 bg-white border border-gray-300 rounded-lg font-semibold text-gray-900 hover:bg-gray-50 transition duration-150"
+                >
+                  <Image
+                    src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg"
+                    alt="Google G Logo"
+                    width={24}
+                    height={24}
+                    className="mr-3"
+                  />
+                  Sign in with Google
                 </button>
+
                 <span className="text-purple-700 cursor-pointer font-semibold mt-4 block text-sm hover:text-purple-500" onClick={() => showScreen('welcomeBack')}>
                   Already have an account? Sign in.
                 </span>
@@ -266,10 +328,20 @@ const App = () => {
                 <button className="w-full py-3 mb-4 text-white font-bold text-lg rounded-xl shadow-lg transition duration-200" style={{ background: 'linear-gradient(90deg, #d8b4fe, #fbcfe8)', color: '#1e1b4b' }} onClick={() => { showAlert('Logged in (demo)'); showScreen('dashboard'); }}>
                   Sign In
                 </button>
-                <button className="flex items-center justify-center w-full py-3 bg-white border border-gray-300 rounded-lg font-semibold text-gray-900 hover:bg-gray-50 transition duration-150">
-                   <Image src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg" alt="Google G Logo" width={24} height={24} className="mr-3" />
+                <button
+                  onClick={handleGoogleLogin}
+                  className="flex items-center justify-center w-full py-3 bg-white border border-gray-300 rounded-lg font-semibold text-gray-900 hover:bg-gray-50 transition duration-150"
+                >
+                  <Image
+                    src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg"
+                    alt="Google G Logo"
+                    width={24}
+                    height={24}
+                    className="mr-3"
+                  />
                   Sign in with Google
                 </button>
+
                 <span className="text-purple-700 cursor-pointer font-semibold mt-4 block text-sm hover:text-purple-500" onClick={() => showScreen('createAccount')}>
                   Need an account? Sign up.
                 </span>
