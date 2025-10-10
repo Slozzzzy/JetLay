@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 
-// --- Type Definitions for Component Props ---
+// --- Type Definitions ---
 
 type CustomAlertProps = {
   message: string;
@@ -14,17 +14,40 @@ type HeaderProps = {
   onBack: () => void;
   showProfileIcon: boolean;
   showScreen: (id: string) => void;
+  hideBackButton?: boolean;
+  profilePictureUrl?: string; // <-- NEW: To show profile picture in header
 };
 
+// --- New Type Definitions for Features ---
+type Document = {
+  id: number;
+  type: string;
+  fileName: string;
+  expiry: string;
+};
 
-// --- Reusable Components and Hooks ---
+type Review = {
+  id: number;
+  name: string;
+  stars: number;
+  text: string;
+  avatarBg: string;
+  img?: string;
+  title: string;
+  imagePreviewUrl?: string; 
+};
 
-// Custom Alert component with blur effect and no black background
+type CalendarEvent = {
+  id: number;
+  text: string;
+};
+
+// --- Reusable Components ---
+
 const CustomAlert: React.FC<CustomAlertProps> = ({ message, onClose }) => {
   if (!message) return null;
-
   return (
-    <div className="fixed inset-0 bg-transparent z-[100] flex items-center justify-center p-4 backdrop-blur-sm"> {/* Changed bg-black bg-opacity-30 to bg-transparent */}
+    <div className="fixed inset-0 bg-transparent z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
       <div className="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full text-center">
         <p className="mb-4 text-lg font-semibold text-gray-900">{message}</p>
         <button
@@ -38,112 +61,229 @@ const CustomAlert: React.FC<CustomAlertProps> = ({ message, onClose }) => {
   );
 };
 
+
 // --- Main App Component ---
 
 const App = () => {
   const [currentScreen, setCurrentScreen] = useState('splash');
   const [alertMessage, setAlertMessage] = useState('');
 
-  // Form State for Create Account
-  const [accountForm, setAccountForm] = useState({
-    fullName: '',
-    email: '',
-    password: '',
-  });
-  
-  // Visa State (reverted to local state tracking for mock purpose)
+  // --- State Management for Features ---
+
+  // Auth & Form State
+  const [accountForm, setAccountForm] = useState({ fullName: '', email: '', password: '' });
+  const [profilePictureUrl, setProfilePictureUrl] = useState(''); // <-- NEW: For profile pic
+
+  // Visa State
   const [nationality, setNationality] = useState('Thailand');
   const [destination, setDestination] = useState('France');
+  const [visaRequirements, setVisaRequirements] = useState<string[]>([]);
+
+  // Document Upload State
+  const [documents, setDocuments] = useState<Document[]>([
+    { id: 1, type: 'Passport', fileName: 'Mickey_Mouse_Passport.pdf', expiry: '2025-11-10' },
+    { id: 2, type: 'Visa (France)', fileName: 'France_Schengen_Visa.pdf', expiry: '2026-05-02' },
+  ]);
+  const [uploadFormState, setUploadFormState] = useState({ type: 'Passport', file: null as File | null, expiry: '' });
+  
+  // Reviews State
+  const [reviews, setReviews] = useState<Review[]>([
+    { id: 1, name: 'Mmay M', stars: 5, text: 'Bangkok → Paris trip. Visa approved in 5 days. Uploading documents to JETLAY was super smooth!', avatarBg: '#581c87', img: 'Visa+Document+Preview', title: 'Great Visa Process!' },
+    { id: 2, name: 'honny M', stars: 4, text: 'JETLAY alerted me about my passport expiry before booking my Singapore trip. Lifesaver!', avatarBg: '#eab308', img: 'Singapore+F1+Track+Preview', title: 'Passport Expiry Alert' },
+  ]);
+  const [reviewFormState, setReviewFormState] = useState({ title: '', text: '', stars: 5, imageFile: null as File | null, imagePreviewUrl: '' });
+
 
   // Calendar State
   const today = useMemo(() => new Date(), []);
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
-  const [calendarNote, setCalendarNote] = useState(''); // State for simple note saving
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [events, setEvents] = useState<Record<string, CalendarEvent[]>>({
+    [`${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`]: [{ id: 1, text: 'Submit visa application' }]
+  });
+  const [eventText, setEventText] = useState('');
 
-  // Navigation Logic
-  const showScreen = useCallback((id: string) => { // Added type for 'id'
-    setCurrentScreen(id);
-  }, []);
+  // --- Core App Logic ---
+
+  const showScreen = useCallback((id: string) => setCurrentScreen(id), []);
   
-  // Auto-navigate from splash screen
   useEffect(() => {
     if (currentScreen === 'splash') {
-      const timer = setTimeout(() => {
-        showScreen('welcomeChoice');
-      }, 2500); // Wait 2.5 seconds on the splash screen
+      const timer = setTimeout(() => showScreen('welcomeChoice'), 2500);
       return () => clearTimeout(timer);
     }
   }, [currentScreen, showScreen]);
 
+  const showAlert = useCallback((message: string) => setAlertMessage(message), []);
+  const closeAlert = useCallback(() => setAlertMessage(''), []);
 
-  const showAlert = useCallback((message: string) => { // Added type for 'message'
-    setAlertMessage(message);
-  }, []);
+  const showProfileIcon = !['splash', 'welcomeChoice', 'createAccount', 'welcomeBack', 'forgotPassword', 'verifyEmail', 'personalId'].includes(currentScreen);
+  
+  // --- Feature Handlers ---
 
-  const closeAlert = useCallback(() => {
-    setAlertMessage('');
-  }, []);
-
-  // Check if header should show profile icon (only on dashboard and related pages, not auth/splash)
-  const showProfileIcon = ['dashboard', 'visa', 'visaResult', 'upload', 'uploadForm', 'reviews', 'addReview', 'calendar'].includes(currentScreen);
-
-  // --- Calendar Functions ---
-  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-
-  const renderCalendar = useCallback((month: number, year: number) => { // Added types
-    const firstDay = (new Date(year, month, 1)).getDay();
-    const daysInMonth = (new Date(year, month + 1, 0)).getDate();
-    let date = 1;
-    const weeks = [];
-
-    for (let i = 0; i < 6; i++) {
-      const days = [];
-      let rowHasDate = false;
-      for (let j = 0; j < 7; j++) {
-        if (i === 0 && j < firstDay) {
-          days.push(<td key={`empty-${i}-${j}`} className="bg-gray-50 p-3 border border-gray-200"></td>);
-        } else if (date > daysInMonth) {
-          days.push(<td key={`empty-${i}-${j}`} className="bg-gray-50 p-3 border border-gray-200"></td>);
-        } else {
-          days.push(
-            <td key={`date-${date}`} className="p-3 border border-gray-200 hover:bg-yellow-100 cursor-pointer transition duration-150">
-              {date}
-            </td>
-          );
-          date++;
-          rowHasDate = true;
-        }
+  // Visa Handler
+  const handleCheckVisa = () => {
+    // --- UPDATED: Significantly expanded mock database ---
+    const mockDb: Record<string, Record<string, string[]>> = {
+      'Thailand': {
+        'France': ['Schengen Visa Form', 'Passport with 2 blank pages', 'Proof of accommodation', 'Travel insurance (30,000 EUR coverage)', 'Flight itinerary'],
+        'USA': ['DS-160 Confirmation Page', 'Valid Passport', 'Proof of funds', 'Appointment confirmation letter', 'Photo (2x2 inches)'],
+        'Japan': ['Visa Application Form', 'Valid Passport', 'Schedule of Stay', 'Proof of relationship (if applicable)', 'Bank statement'],
+        'United Kingdom': ['UK Visa Application', 'Proof of financial means', 'Accommodation details', 'Tuberculosis test results (if applicable)'],
+        'Australia': ['eVisitor or Visitor visa (subclass 600)', 'Sufficient funds', 'Health and character checks'],
+        'South Korea': ['K-ETA required for visa-free entry', 'Valid passport', 'Return ticket confirmation']
+      },
+      'USA': {
+        'France': ['Passport valid for 3 months beyond stay', 'Proof of funds', 'Details of accommodation (Schengen Area visa-free)'],
+        'Japan': ['Visa waiver program (up to 90 days)', 'Valid e-Passport'],
+        'United Kingdom': ['Visa-free for tourism up to 6 months', 'Proof of onward travel may be requested'],
+        'Australia': ['ETA (Electronic Travel Authority) required', 'Valid US Passport'],
+        'Brazil': ['e-Visa required', 'Passport-sized photo', 'Proof of sufficient funds'],
+        'South Africa': ['Visa-free for up to 90 days', 'Proof of yellow fever vaccination if coming from an infected area']
+      },
+      'United Kingdom': {
+          'USA': ['ESTA required for visa waiver program', 'Valid e-Passport'],
+          'Japan': ['Visa waiver for up to 90 days'],
+          'Thailand': ['Tourist visa required', 'Proof of funds', 'Itinerary'],
+          'Canada': ['Visa-free (eTA required for air travel)'],
+          'New Zealand': ['NZeTA required for visa waiver'],
+      },
+      'India': {
+          'USA': ['B1/B2 Visa required', 'Interview at US consulate', 'Proof of ties to home country'],
+          'United Kingdom': ['Standard Visitor visa required', 'Biometrics appointment'],
+          'Thailand': ['Visa on Arrival available (check terms)', 'e-Visa available'],
+          'UAE': ['Pre-arranged visa required', 'Often sponsored by airline or hotel'],
+      },
+      'Australia': {
+        'USA': ['ESTA required for visa waiver program'],
+        'United Kingdom': ['Visa-free entry for up to 6 months'],
+        'Indonesia': ['Visa on Arrival available for 30 days'],
+        'Fiji': ['Visa-free for tourism'],
       }
-      if (rowHasDate) {
-        weeks.push(<tr key={`week-${i}`}>{days}</tr>);
-      }
+    };
+    const reqs = mockDb[nationality]?.[destination] ?? [`No specific data for ${nationality} to ${destination}. Please check the official embassy website.`];
+    setVisaRequirements(reqs);
+    showScreen('visaResult');
+  };
+
+  // Upload Handler
+  const handleSaveDocument = () => {
+    if (!uploadFormState.file || !uploadFormState.expiry) {
+      showAlert('Please select a file and set an expiry date.');
+      return;
     }
-    return weeks;
-  }, []);
+    const newDocument: Document = {
+      id: Date.now(),
+      type: uploadFormState.type,
+      fileName: uploadFormState.file.name,
+      expiry: uploadFormState.expiry,
+    };
+    setDocuments(prev => [...prev, newDocument]);
+    showAlert('Document saved successfully!');
+    setUploadFormState({ type: 'Passport', file: null, expiry: '' }); // Reset form
+    showScreen('upload');
+  };
 
-  const changeMonth = (direction: number) => { // Added type
+  // Review Handler
+  const handlePostReview = () => {
+    if (!reviewFormState.title || !reviewFormState.text) {
+      showAlert('Please fill in a title and your experience.');
+      return;
+    }
+    const newReview: Review = {
+      id: Date.now(),
+      name: 'Mickey M.', // Mock user name
+      stars: reviewFormState.stars,
+      text: reviewFormState.text,
+      title: reviewFormState.title,
+      avatarBg: '#1e1b4b',
+      imagePreviewUrl: reviewFormState.imagePreviewUrl,
+    };
+    setReviews(prev => [newReview, ...prev]);
+    showAlert('Thank you for your review!');
+    setReviewFormState({ title: '', text: '', stars: 5, imageFile: null, imagePreviewUrl: '' }); 
+    showScreen('reviews');
+  };
+  
+  // Calendar Handlers
+  const handleDateClick = (day: number) => {
+    const date = new Date(currentYear, currentMonth, day);
+    setSelectedDate(date);
+    setEventText(''); // Clear previous text
+  };
+
+  const handleAddEvent = () => {
+    if (!selectedDate || !eventText.trim()) return;
+    const dateKey = `${selectedDate.getFullYear()}-${selectedDate.getMonth()}-${selectedDate.getDate()}`;
+    const newEvent: CalendarEvent = { id: Date.now(), text: eventText };
+    setEvents(prev => ({
+      ...prev,
+      [dateKey]: [...(prev[dateKey] ?? []), newEvent]
+    }));
+    setEventText(''); // Clear input after adding
+  };
+  
+  const handleProfilePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files ? e.target.files[0] : null;
+    if (file) {
+      setProfilePictureUrl(URL.createObjectURL(file));
+    }
+  };
+
+  const changeMonth = (direction: number) => {
     let newMonth = currentMonth + direction;
     let newYear = currentYear;
-
-    if (newMonth < 0) {
-      newMonth = 11;
-      newYear -= 1;
-    } else if (newMonth > 11) {
-      newMonth = 0;
-      newYear += 1;
-    }
-    
-    newYear = Math.max(today.getFullYear(), Math.min(2099, newYear));
-
+    if (newMonth < 0) { newMonth = 11; newYear -= 1; } 
+    else if (newMonth > 11) { newMonth = 0; newYear += 1; }
     setCurrentMonth(newMonth);
     setCurrentYear(newYear);
   };
   
+  const monthNames = useMemo(() => ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"], []);
+  
+  const renderCalendar = useCallback(() => {
+    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const weeks: React.ReactElement[] = [];
+    let days: React.ReactElement[] = [];
+
+    // Fill blank cells for the first week
+    for (let i = 0; i < firstDay; i++) {
+        days.push(<td key={`empty-start-${i}`} className="p-1 sm:p-3 border border-gray-200 bg-gray-50"></td>);
+    }
+
+    // Fill cells with dates
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dateKey = `${currentYear}-${currentMonth}-${day}`;
+        const hasEvent = events[dateKey] && events[dateKey].length > 0;
+        const isSelected = selectedDate && selectedDate.getDate() === day && selectedDate.getMonth() === currentMonth && selectedDate.getFullYear() === currentYear;
+
+        days.push(
+            <td 
+                key={day} 
+                className={`relative p-1 sm:p-3 border border-gray-200 hover:bg-yellow-100 cursor-pointer transition duration-150 text-center ${isSelected ? 'bg-purple-200 font-bold' : ''}`}
+                onClick={() => handleDateClick(day)}
+            >
+                <span>{day}</span>
+                {hasEvent && <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-purple-600 rounded-full"></div>}
+            </td>
+        );
+
+        if ((firstDay + day) % 7 === 0 || day === daysInMonth) {
+            weeks.push(<tr key={`week-${day}`}>{days}</tr>);
+            days = [];
+        }
+    }
+    return weeks;
+}, [currentMonth, currentYear, events, selectedDate]);
+
+
   // --- Screen Definitions (JSX) ---
 
   const renderScreen = () => {
     switch (currentScreen) {
+      // --- AUTH & SETUP SCREENS ---
       case 'splash':
         return (
           <div className="relative min-h-screen flex flex-col justify-center items-center p-6 bg-purple-50">
@@ -327,23 +467,31 @@ const App = () => {
                 <h1 className="text-3xl font-bold text-gray-900">Personal ID</h1>
               </div>
               <div className="flex justify-center mb-6">
-                <div className="w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center text-gray-400 text-6xl">👤</div>
+                <div className="relative w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center text-gray-400 text-6xl overflow-hidden">
+                  {profilePictureUrl ? (
+                    <Image src={profilePictureUrl} alt="Profile Preview" layout="fill" objectFit="cover" />
+                  ) : (
+                    '👤'
+                  )}
+                </div>
               </div>
-              <input type="text" placeholder="First Name" className="w-full p-4 mb-4 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500" />
-              <input type="text" placeholder="Last Name" className="w-full p-4 mb-4 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500" />
-              <input type="date" placeholder="Date of Birth" className="w-full p-4 mb-4 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 text-gray-500" />
-              <input type="tel" placeholder="Phone Number" className="w-full p-4 mb-6 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500" />
+              <input type="text" placeholder="First Name" className="w-full p-4 mb-4 border border-gray-300 rounded-lg" />
+              <input type="text" placeholder="Last Name" className="w-full p-4 mb-4 border border-gray-300 rounded-lg" />
+              <input type="date" className="w-full p-4 mb-4 border border-gray-300 rounded-lg text-gray-500" />
+              <input type="tel" placeholder="Phone Number" className="w-full p-4 mb-6 border border-gray-300 rounded-lg" />
               <div className="flex items-center justify-between w-full p-4 mb-8 border border-gray-300 rounded-lg">
                 <label className="text-gray-500">Profile Picture</label>
-                <label htmlFor="profilePicture" className="px-4 py-2 bg-gray-200 text-gray-900 font-semibold rounded-lg cursor-pointer hover:bg-gray-300 transition duration-150">Choose File</label>
-                <input type="file" id="profilePicture" accept=".jpg,.jpeg,.png" className="hidden" />
+                <label htmlFor="profilePicture" className="px-4 py-2 bg-gray-200 text-gray-900 font-semibold rounded-lg cursor-pointer">Choose File</label>
+                <input type="file" id="profilePicture" accept="image/*" className="hidden" onChange={handleProfilePictureChange} />
               </div>
-              <button className="w-full py-4 text-white font-bold text-lg rounded-full shadow-lg transition duration-200" style={{ background: 'linear-gradient(90deg, #a78bfa, #f472b6)' }} onClick={() => { showAlert('Profile created! Welcome aboard.'); showScreen('dashboard'); }}>
+              <button className="w-full py-4 text-white font-bold text-lg rounded-full shadow-lg" style={{ background: 'linear-gradient(90deg, #a78bfa, #f472b6)' }} onClick={() => { showAlert('Profile created! Welcome aboard.'); showScreen('dashboard'); }}>
                 Get Started
               </button>
             </div>
           </div>
         );
+
+      // --- MAIN FEATURE SCREENS ---
         
       case 'dashboard':
         const dashboardCards = [
@@ -355,38 +503,26 @@ const App = () => {
 
         return (
           <div className="flex flex-col min-h-screen bg-gradient-to-br from-purple-200 via-pink-200 to-rose-200 grainy-bg">
-             <style jsx global>{`
-              .grainy-bg::after {
-                content: '';
-                position: absolute;
-                top: 0; left: 0; right: 0; bottom: 0;
-                background-image: url('https://www.transparenttextures.com/patterns/gplay.png');
-                opacity: 0.05;
-                pointer-events: none;
-                animation: grain 8s steps(10) infinite;
-              }
-              @keyframes grain {
-                0%, 100% { transform: translate(0, 0); } 10% { transform: translate(-5%, -10%); } 20% { transform: translate(-15%, 5%); } 30% { transform: translate(7%, -25%); } 40% { transform: translate(-5%, 25%); } 50% { transform: translate(-15%, 10%); } 60% { transform: translate(15%, 0%); } 70% { transform: translate(0%, 15%); } 80% { transform: translate(3%, 35%); } 90% { transform: translate(-10%, 10%); }
-              }
-            `}</style>
-            <Header title="Hello, User" onBack={() => showScreen('welcomeChoice')} showProfileIcon={showProfileIcon} showScreen={showScreen} />
+             <style jsx global>{`.grainy-bg::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-image: url('https://www.transparenttextures.com/patterns/gplay.png'); opacity: 0.05; pointer-events: none; animation: grain 8s steps(10) infinite; } @keyframes grain { 0%, 100% { transform: translate(0, 0); } 10% { transform: translate(-5%, -10%); } 20% { transform: translate(-15%, 5%); } 30% { transform: translate(7%, -25%); } 40% { transform: translate(-5%, 25%); } 50% { transform: translate(-15%, 10%); } 60% { transform: translate(15%, 0%); } 70% { transform: translate(0%, 15%); } 80% { transform: translate(3%, 35%); } 90% { transform: translate(-10%, 10%); } }`}</style>
+            <Header 
+              title="Hello, User" 
+              onBack={() => {}}
+              showProfileIcon={showProfileIcon} 
+              showScreen={showScreen} 
+              hideBackButton={true}
+              profilePictureUrl={profilePictureUrl}
+            />
             <div className="p-6 flex-1">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-2">
                 {dashboardCards.map((card) => (
-                  <div 
-                    key={card.id}
-                    className="bg-white rounded-2xl p-6 text-center shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group hover:-translate-y-2 overflow-hidden"
-                    onClick={() => showScreen(card.id)}
-                  >
+                  <div key={card.id} className="bg-white rounded-2xl p-6 text-center shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group hover:-translate-y-2 overflow-hidden" onClick={() => showScreen(card.id)}>
                     <div className="transition-transform duration-300 group-hover:scale-110">
                         <div className="mb-3 flex justify-center items-center h-14">
                           <Image src={card.icon} alt={card.title} width={56} height={56} className="object-contain" />
                         </div>
                         <h3 className="font-semibold text-lg text-gray-900 truncate">{card.title}</h3>
                     </div>
-                    <p className="text-gray-500 text-sm h-0 opacity-0 group-hover:h-auto group-hover:mt-2 group-hover:opacity-100 transition-all duration-300">
-                        {card.detail}
-                    </p>
+                    <p className="text-gray-500 text-sm h-0 opacity-0 group-hover:h-auto group-hover:mt-2 group-hover:opacity-100 transition-all duration-300">{card.detail}</p>
                   </div>
                 ))}
               </div>
@@ -394,55 +530,56 @@ const App = () => {
           </div>
         );
 
+      // --- VISA --- (Updated)
       case 'visa':
+        const nationalities = ['Thailand', 'USA', 'United Kingdom', 'India', 'Australia'];
+        const destinations = ['France', 'USA', 'Japan', 'United Kingdom', 'Australia', 'South Korea', 'Brazil', 'South Africa', 'Canada', 'New Zealand', 'Indonesia', 'Fiji', 'UAE'];
         return (
           <div className="flex flex-col min-h-screen bg-purple-50 pb-20">
-            <Header title="Visa Requirement" onBack={() => showScreen('dashboard')} showProfileIcon={showProfileIcon} showScreen={showScreen} />
+            <Header title="Visa Requirement" onBack={() => showScreen('dashboard')} showProfileIcon={showProfileIcon} showScreen={showScreen} profilePictureUrl={profilePictureUrl} />
             <div className="p-6 flex-1 max-w-3xl mx-auto w-full">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-900">Nationality</label>
+                  <label className="block text-sm font-medium text-gray-900">Your Nationality</label>
                   <select className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm" value={nationality} onChange={(e) => setNationality(e.target.value)}>
-                    <option>Thailand</option><option>Japan</option><option>France</option><option>USA</option>
+                    {nationalities.map(n => <option key={n}>{n}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-900">Destination</label>
+                  <label className="block text-sm font-medium text-gray-900">Your Destination</label>
                   <select className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm" value={destination} onChange={(e) => setDestination(e.target.value)}>
-                    <option>France</option><option>USA</option><option>Japan</option><option>Thailand</option>
+                    {destinations.map(d => <option key={d}>{d}</option>)}
                   </select>
                 </div>
               </div>
-              <button className="w-full mt-6 py-3 bg-yellow-400 text-gray-900 font-bold rounded-xl shadow-md hover:bg-yellow-500 transition duration-150 flex items-center justify-center" onClick={() => showScreen('visaResult')}>
+              <button className="w-full mt-6 py-3 bg-yellow-400 text-gray-900 font-bold rounded-xl shadow-md hover:bg-yellow-500" onClick={handleCheckVisa}>
                   Check Requirements
               </button>
-              <p className="text-center text-sm text-gray-500 mt-3">Mock result based on selected countries.</p>
             </div>
           </div>
         );
 
       case 'visaResult':
-        const mockRequirements = [ 'Passport valid for 6 months beyond intended stay', 'Completed Visa Application Form', 'Two recent passport-sized photos (35mm x 45mm)', 'Proof of accommodation (Hotel booking or host invitation)', 'Proof of Funds (Bank statements for last 3 months)', 'Travel Insurance covering entire stay', 'Round-trip flight ticket reservations' ];
         return (
           <div className="flex flex-col min-h-screen bg-purple-50 pb-20">
-            <Header title={`Requirements & Checklist for ${destination}`} onBack={() => showScreen('visa')} showProfileIcon={showProfileIcon} showScreen={showScreen} />
+            <Header title={`Requirements for ${destination}`} onBack={() => showScreen('visa')} showProfileIcon={showProfileIcon} showScreen={showScreen} profilePictureUrl={profilePictureUrl}/>
             <div className="p-6 flex-1 max-w-3xl mx-auto w-full">
                 <div className="bg-white p-6 rounded-xl shadow-xl border border-purple-200">
-                    <h3 className="text-xl font-bold text-purple-700 mb-3">Visa Checklist</h3>
+                    <h3 className="text-xl font-bold text-purple-700 mb-3">Visa Checklist ({nationality} citizen)</h3>
                     <div className="space-y-3">
-                        {mockRequirements.map((item, index) => (
-                          <label key={index} className="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm border border-gray-200 cursor-pointer hover:bg-gray-50">
+                        {visaRequirements.map((item, index) => (
+                          <label key={index} className="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm border">
                             <span className="font-medium text-gray-900">{item}</span>
-                            <input type="checkbox" defaultChecked={index < 3} className="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500" />
+                            <input type="checkbox" className="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500" />
                           </label>
                         ))}
                     </div>
                 </div>
               <div className="mt-6 space-y-3">
-                <button className="w-full py-3 text-white font-bold rounded-xl shadow-md" style={{background: 'linear-gradient(90deg, #d8b4fe, #fbcfe8)', color: '#1e1b4b'}} onClick={() => showAlert('Open official embassy link (demo)')}>
+                <button className="w-full py-3 text-white font-bold rounded-xl shadow-md" style={{background: 'linear-gradient(90deg, #d8b4fe, #fbcfe8)', color: '#1e1b4b'}} onClick={() => showAlert('Opening official embassy link (demo)...')}>
                   Open Official Source
                 </button>
-                <button className="w-full py-3 bg-gray-900 text-white font-bold rounded-xl shadow-md hover:bg-gray-700 transition duration-150" onClick={() => showScreen('calendar')}>
+                <button className="w-full py-3 bg-gray-900 text-white font-bold rounded-xl shadow-md" onClick={() => showScreen('calendar')}>
                   Add deadlines to Calendar
                 </button>
               </div>
@@ -453,19 +590,26 @@ const App = () => {
       case 'upload':
         return (
           <div className="flex flex-col min-h-screen bg-purple-50 pb-20">
-            <Header title="Your Documents" onBack={() => showScreen('dashboard')} showProfileIcon={showProfileIcon} showScreen={showScreen} />
+            <Header title="Your Documents" onBack={() => showScreen('dashboard')} showProfileIcon={showProfileIcon} showScreen={showScreen} profilePictureUrl={profilePictureUrl}/>
             <div className="p-6 flex-1 max-w-3xl mx-auto w-full">
               <div className="space-y-3">
-                <div className="flex items-center justify-between p-4 bg-white rounded-xl shadow-md border border-gray-200">
-                  <div><strong className="text-gray-900">Passport</strong> <span className="text-sm text-red-600">• Expires: 2025-11-10</span></div>
-                  <span className="px-3 py-1 text-xs font-semibold bg-red-100 text-red-800 rounded-full">Expiring soon</span>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-white rounded-xl shadow-md border border-gray-200">
-                  <div><strong className="text-gray-900">Visa (France)</strong> <span className="text-sm text-green-600">• Expires: 2026-05-02</span></div>
-                  <span className="px-3 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full">Valid</span>
-                </div>
+                {documents.map(doc => {
+                  const isExpiringSoon = new Date(doc.expiry) < new Date(new Date().setMonth(new Date().getMonth() + 6));
+                  return (
+                    <div key={doc.id} className="flex items-center justify-between p-4 bg-white rounded-xl shadow-md border">
+                      <div>
+                        <strong className="text-gray-900">{doc.type}</strong>
+                        <span className={`text-sm ml-2 ${isExpiringSoon ? 'text-red-600' : 'text-green-600'}`}>• Expires: {doc.expiry}</span>
+                        <p className="text-xs text-gray-500">{doc.fileName}</p>
+                      </div>
+                      <span className={`px-3 py-1 text-xs font-semibold rounded-full ${isExpiringSoon ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
+                        {isExpiringSoon ? 'Expiring soon' : 'Valid'}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
-              <button className="w-full mt-6 py-3 bg-yellow-400 text-gray-900 font-bold rounded-xl shadow-md hover:bg-yellow-500 transition duration-150" onClick={() => showScreen('uploadForm')}>
+              <button className="w-full mt-6 py-3 bg-yellow-400 text-gray-900 font-bold rounded-xl shadow-md" onClick={() => showScreen('uploadForm')}>
                 Upload New Document
               </button>
             </div>
@@ -475,23 +619,23 @@ const App = () => {
       case 'uploadForm':
         return (
           <div className="flex flex-col min-h-screen bg-purple-50 pb-20">
-            <Header title="Upload Document" onBack={() => showScreen('upload')} showProfileIcon={showProfileIcon} showScreen={showScreen} />
+            <Header title="Upload Document" onBack={() => showScreen('upload')} showProfileIcon={showProfileIcon} showScreen={showScreen} profilePictureUrl={profilePictureUrl}/>
             <div className="p-6 flex-1 max-w-2xl mx-auto w-full">
                 <label className="block text-sm font-medium text-gray-900">Document Type</label>
-                <select className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm mb-4">
-                  <option>Passport</option><option>Visa</option><option>Travel Insurance</option><option>Photo</option>
+                <select className="mt-1 block w-full p-3 border border-gray-300 rounded-lg" value={uploadFormState.type} onChange={e => setUploadFormState(prev => ({ ...prev, type: e.target.value }))}>
+                  <option>Passport</option><option>Visa</option><option>Travel Insurance</option><option>ID Card</option>
                 </select>
-                <label className="block text-sm font-medium text-gray-900">Choose File</label>
+                <label className="block text-sm font-medium text-gray-900 mt-4">Choose File</label>
                 <div className="flex items-center space-x-3 mt-1 mb-4">
-                    <label htmlFor="docUploadFile" className="px-4 py-2 bg-gray-200 text-gray-900 font-semibold rounded-lg cursor-pointer hover:bg-gray-300 transition duration-150">
+                    <label htmlFor="docUploadFile" className="px-4 py-2 bg-gray-200 text-gray-900 font-semibold rounded-lg cursor-pointer">
                         Choose File
                     </label>
-                    <input type="file" id="docUploadFile" className="hidden" />
-                    <span className="text-sm text-gray-500">No file chosen</span>
+                    <input type="file" id="docUploadFile" className="hidden" onChange={e => setUploadFormState(prev => ({ ...prev, file: e.target.files ? e.target.files[0] : null }))}/>
+                    <span className="text-sm text-gray-500">{uploadFormState.file?.name ?? 'No file chosen'}</span>
                 </div>
                 <label className="block text-sm font-medium text-gray-900">Expiry Date</label>
-                <input type="date" className="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm mb-6" />
-                <button className="w-full py-3 bg-gray-900 text-white font-bold rounded-xl shadow-md hover:bg-gray-700 transition duration-150" onClick={() => showScreen('upload')}>
+                <input type="date" className="mt-1 block w-full p-3 border border-gray-300 rounded-lg mb-6" value={uploadFormState.expiry} onChange={e => setUploadFormState(prev => ({...prev, expiry: e.target.value}))}/>
+                <button className="w-full py-3 bg-gray-900 text-white font-bold rounded-xl shadow-md" onClick={handleSaveDocument}>
                   Save
                 </button>
             </div>
@@ -501,29 +645,26 @@ const App = () => {
       case 'reviews':
         return (
           <div className="flex flex-col min-h-screen bg-purple-50 pb-20">
-            <Header title="Reviews" onBack={() => showScreen('dashboard')} showProfileIcon={showProfileIcon} showScreen={showScreen} />
+            <Header title="Traveler Reviews" onBack={() => showScreen('dashboard')} showProfileIcon={showProfileIcon} showScreen={showScreen} profilePictureUrl={profilePictureUrl}/>
             <div className="p-6 flex-1 max-w-6xl mx-auto w-full text-center">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {[
-                  { name: 'Mmay M', stars: 5, text: 'Bangkok → Paris trip. Visa approved in 5 days. Uploading documents to JETLAY was super smooth!', avatarBg: '#581c87', img: 'Visa+Document+Preview' },
-                  { name: 'honny M', stars: 4, text: 'JETLAY alerted me about my passport expiry before booking my Singapore trip. Lifesaver!', avatarBg: '#eab308', img: 'Singapore+F1+Track+Preview' },
-                  { name: 'Fern B.', stars: 4, text: 'Docs synced to Google Calendar perfectly! Reminder saved me.', avatarBg: '#6b21a8', img: null },
-                  { name: 'Bank G.', stars: 3, text: 'Visa took 10 days. Make sure to book flights early!', avatarBg: '#1e1b4b', img: null },
-                ].map((review, index) => (
-                  <div key={index} className="bg-white rounded-xl p-5 shadow-lg border border-gray-200 flex flex-col gap-3">
+                {reviews.map((review) => (
+                  <div key={review.id} className="bg-white rounded-xl p-5 shadow-lg border flex flex-col gap-3 text-left">
                     <div className="flex items-center gap-3 font-semibold text-gray-900">
                       <div className="w-9 h-9 rounded-full text-white flex items-center justify-center text-sm" style={{ backgroundColor: review.avatarBg }}>{review.name[0]}</div>
                       <span>{review.name}</span>
                     </div>
+                    <h4 className="font-bold text-gray-800">{review.title}</h4>
                     <div className="text-yellow-500 text-xl">{'★'.repeat(review.stars) + '☆'.repeat(5 - review.stars)}</div>
-                    <p className="text-gray-600 text-sm text-left leading-relaxed">{review.text}</p>
-                    {review.img && ( <Image width={400} height={120} className="w-full h-32 object-cover rounded-lg mt-2 bg-gray-100" src={`https://placehold.co/400x120/f3f4f6/6b21a8?text=${review.img}`} alt="Review Visual" /> )}
-                    <span className="text-xs text-gray-400 mt-auto pt-2 text-left">2 weeks ago (demo)</span>
+                    <p className="text-gray-600 text-sm leading-relaxed">{review.text}</p>
+                    {review.imagePreviewUrl && ( <Image width={400} height={120} className="w-full h-32 object-cover rounded-lg mt-2" src={review.imagePreviewUrl} alt="User review image" />)}
+                    {review.img && !review.imagePreviewUrl && ( <Image width={400} height={120} className="w-full h-32 object-cover rounded-lg mt-2" src={`https://placehold.co/400x120/f3f4f6/6b21a8?text=${review.img}`} alt="Review Visual" /> )}
+                    <span className="text-xs text-gray-400 mt-auto pt-2">Posted recently</span>
                   </div>
                 ))}
               </div>
-              <button className="w-64 py-3 mt-8 text-white font-bold rounded-xl shadow-lg transition duration-200" style={{ background: 'linear-gradient(90deg, #d8b4fe, #fbcfe8)', color: '#1e1b4b' }} onClick={() => showScreen('addReview')}>
-                Add your reviews
+              <button className="w-64 py-3 mt-8 text-white font-bold rounded-xl shadow-lg" style={{ background: 'linear-gradient(90deg, #d8b4fe, #fbcfe8)', color: '#1e1b4b' }} onClick={() => showScreen('addReview')}>
+                Add Your Review
               </button>
             </div>
           </div>
@@ -532,59 +673,63 @@ const App = () => {
       case 'addReview':
         return (
           <div className="flex flex-col min-h-screen bg-purple-50 pb-20">
-            <Header title="Add Review" onBack={() => showScreen('reviews')} showProfileIcon={showProfileIcon} showScreen={showScreen} />
+            <Header title="Add Your Review" onBack={() => showScreen('reviews')} showProfileIcon={showProfileIcon} showScreen={showScreen} profilePictureUrl={profilePictureUrl}/>
             <div className="p-6 flex-1 max-w-md mx-auto w-full">
               <div className="bg-white p-8 rounded-2xl shadow-xl">
-                <div className="mb-5"><input type="text" placeholder="Title (e.g., Bangkok → Paris)" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500" style={{height: 50}} /></div>
-                <div className="mb-5"><textarea placeholder="Your experience...." className="w-full p-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500" style={{minHeight: 150}}></textarea></div>
-                <div className="mb-5"><input type="url" placeholder="Google Map place link (optional)" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500" style={{height: 50}} /></div>
-                <div className="mb-6">
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">Attach photos</label>
-                  <div className="flex items-center space-x-3">
-                    <label htmlFor="reviewFile" className="px-4 py-2 bg-gray-200 text-gray-900 font-semibold rounded-lg cursor-pointer hover:bg-gray-300 transition duration-150">Choose File</label>
-                    <input type="file" multiple id="reviewFile" className="hidden" />
-                    <span className="text-sm text-gray-500">No file chosen</span>
-                  </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-semibold text-gray-900 mb-2">Rating</label>
+                  <div className="flex text-3xl">{[1, 2, 3, 4, 5].map(star => (<span key={star} className="cursor-pointer" onClick={() => setReviewFormState(prev => ({ ...prev, stars: star }))}>{star <= reviewFormState.stars ? '★' : '☆'}</span>))}</div>
                 </div>
-                <button className="w-full py-3 text-white font-bold rounded-xl shadow-lg transition duration-200" style={{ background: 'linear-gradient(90deg, #d8b4fe, #fbcfe8)', color: '#1e1b4b' }} onClick={() => showScreen('reviews')}>
-                  Post Review
-                </button>
+                <div className="mb-4"><input type="text" placeholder="Title (e.g., Bangkok → Paris)" className="w-full p-3 border border-gray-300 rounded-lg" value={reviewFormState.title} onChange={e => setReviewFormState(prev => ({ ...prev, title: e.target.value }))} /></div>
+                <div className="mb-4"><textarea placeholder="Your experience..." className="w-full p-3 border border-gray-300 rounded-lg min-h-[120px]" value={reviewFormState.text} onChange={e => setReviewFormState(prev => ({ ...prev, text: e.target.value }))}></textarea></div>
+                <label className="block text-sm font-medium text-gray-900 mt-4">Add Photo</label>
+                <div className="flex items-center space-x-3 mt-1 mb-4">
+                    <label htmlFor="reviewPhotoUpload" className="px-4 py-2 bg-gray-200 text-gray-900 font-semibold rounded-lg cursor-pointer">Choose File</label>
+                    <input type="file" id="reviewPhotoUpload" className="hidden" accept="image/*" onChange={e => { const file = e.target.files ? e.target.files[0] : null; if (file) { setReviewFormState(prev => ({...prev, imageFile: file, imagePreviewUrl: URL.createObjectURL(file)}));}}}/>
+                    <span className="text-sm text-gray-500 truncate">{reviewFormState.imageFile?.name ?? 'No file chosen'}</span>
+                </div>
+                {reviewFormState.imagePreviewUrl && (<div className="mb-4"><Image src={reviewFormState.imagePreviewUrl} alt="Review preview" width={400} height={200} className="w-full h-auto object-cover rounded-lg" /></div>)}
+                <button className="w-full py-3 text-white font-bold rounded-xl shadow-lg" style={{ background: 'linear-gradient(90deg, #d8b4fe, #fbcfe8)', color: '#1e1b4b' }} onClick={handlePostReview}>Post Review</button>
               </div>
             </div>
           </div>
         );
         
       case 'calendar':
+        const selectedDateKey = selectedDate ? `${selectedDate.getFullYear()}-${selectedDate.getMonth()}-${selectedDate.getDate()}` : '';
+        const selectedDateEvents = events[selectedDateKey] || [];
         return (
-          <div className="flex flex-col min-h-screen bg-purple-50 pb-20">
-            <Header title="Travel Calendar" onBack={() => showScreen('dashboard')} showProfileIcon={showProfileIcon} showScreen={showScreen} />
-            <div className="p-6 flex-1 max-w-5xl mx-auto w-full">
-              <div className="flex flex-wrap gap-3 items-center mb-4">
-                <select className="p-3 border border-gray-300 rounded-lg shadow-sm" value={currentMonth} onChange={(e) => setCurrentMonth(parseInt(e.target.value))}>
-                  {monthNames.map((name, index) => <option key={name} value={index}>{name}</option>)}
-                </select>
-                <select className="p-3 border border-gray-300 rounded-lg shadow-sm" value={currentYear} onChange={(e) => setCurrentYear(parseInt(e.target.value))}>
-                  {Array.from({ length: 2099 - today.getFullYear() + 1 }, (_, i) => today.getFullYear() + i).map(y => ( <option key={y} value={y}>{y}</option> ))}
-                </select>
-                <button className="px-4 py-3 bg-yellow-400 text-gray-900 font-bold rounded-lg shadow-md hover:bg-yellow-500 transition duration-150" onClick={() => changeMonth(-1)}>&#9664;</button>
-                <button className="px-4 py-3 bg-yellow-400 text-gray-900 font-bold rounded-lg shadow-md hover:bg-yellow-500 transition duration-150" onClick={() => changeMonth(1)}>&#9654;</button>
-              </div>
-              <table className="w-full border-collapse bg-white rounded-xl shadow-xl overflow-hidden">
-                <thead>
-                  <tr className="bg-yellow-400 text-gray-900">
-                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => <th key={day} className="p-3 border border-gray-300 font-bold">{day}</th>)}
-                  </tr>
-                </thead>
-                <tbody>
-                  {renderCalendar(currentMonth, currentYear)}
-                </tbody>
-              </table>
-              <div className="mt-5 space-y-3">
-                <textarea placeholder="Add notes for your trip... e.g., 'Day 1: Arrive in Paris, check in to hotel. Evening: Eiffel Tower. Day 2: Louvre museum, then walk along the Seine.'" className="w-full p-4 border border-gray-300 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500" rows={4} value={calendarNote} onChange={(e) => setCalendarNote(e.target.value)}></textarea>
-                <button className="w-full py-3 bg-yellow-400 text-gray-900 font-bold rounded-xl shadow-md hover:bg-yellow-500 transition duration-150" onClick={() => showAlert('Note saved (demo)')}>Save Note</button>
-              </div>
+            <div className="flex flex-col min-h-screen bg-purple-50 pb-20">
+                <Header title="Travel Calendar" onBack={() => showScreen('dashboard')} showProfileIcon={showProfileIcon} showScreen={showScreen} profilePictureUrl={profilePictureUrl}/>
+                <div className="p-4 flex-1 max-w-6xl mx-auto w-full">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div className="lg:col-span-2 bg-white p-4 rounded-xl shadow-xl">
+                             <div className="flex flex-wrap gap-3 items-center mb-4">
+                                <h3 className="text-xl font-bold text-gray-800 w-full sm:w-auto">{`${monthNames[currentMonth]} ${currentYear}`}</h3>
+                                <div className="flex-grow"></div>
+                                <button className="px-4 py-2 bg-yellow-400 text-gray-900 font-bold rounded-lg shadow-md" onClick={() => changeMonth(-1)}>‹ Prev</button>
+                                <button className="px-4 py-2 bg-yellow-400 text-gray-900 font-bold rounded-lg shadow-md" onClick={() => changeMonth(1)}>Next ›</button>
+                            </div>
+                            <table className="w-full border-collapse">
+                                <thead><tr className="bg-yellow-400 text-gray-900">{['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => <th key={day} className="p-2 sm:p-3 border font-bold">{day}</th>)}</tr></thead>
+                                <tbody>{renderCalendar()}</tbody>
+                            </table>
+                        </div>
+                        <div className="bg-white p-6 rounded-xl shadow-xl">
+                            <h3 className="text-xl font-bold text-purple-700 mb-4">{selectedDate ? `Events for ${selectedDate.toLocaleDateString()}` : 'Select a date'}</h3>
+                            {selectedDate && (
+                                <div className="space-y-4">
+                                    <div className="space-y-2 max-h-48 overflow-y-auto">{selectedDateEvents.length > 0 ? selectedDateEvents.map(event => (<div key={event.id} className="p-3 bg-purple-100 rounded-lg text-sm">{event.text}</div>)) : <p className="text-gray-500 text-sm">No events for this day.</p>}</div>
+                                    <div>
+                                        <textarea placeholder="Add new event..." className="w-full p-2 border rounded-lg" rows={3} value={eventText} onChange={e => setEventText(e.target.value)}/>
+                                        <button className="w-full mt-2 py-2 bg-gray-900 text-white font-bold rounded-lg" onClick={handleAddEvent}>Add Event</button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
             </div>
-          </div>
         );
 
       case 'user':
@@ -592,49 +737,31 @@ const App = () => {
            <div className="flex flex-col min-h-screen bg-purple-50 p-6 justify-center items-center">
             <div className="w-full max-w-md">
               <div className="relative mb-6 text-center">
-                <button className="absolute top-1 left-0 text-gray-600 font-semibold flex items-center" onClick={() => showScreen('dashboard')}>
-                  &larr; Back
-                </button>
+                <button className="absolute top-1 left-0 text-gray-600 font-semibold flex items-center" onClick={() => showScreen('dashboard')}>&larr; Back</button>
                 <h1 className="text-3xl font-bold text-gray-900">User Profile</h1>
               </div>
-
               <div className="flex justify-center mb-6">
-                <div className="w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center text-gray-400 text-6xl">
-                  👤
+                <div className="relative w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center text-gray-400 text-6xl overflow-hidden">
+                  {profilePictureUrl ? (
+                    <Image src={profilePictureUrl} alt="Profile Preview" layout="fill" objectFit="cover" />
+                  ) : (
+                    '👤'
+                  )}
                 </div>
               </div>
-
-              <input type="text" placeholder="First Name" defaultValue="Mickey" className="w-full p-4 mb-4 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500" />
-              <input type="text" placeholder="Last Name" defaultValue="Mouse" className="w-full p-4 mb-4 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500" />
-              <input type="date" placeholder="Date of Birth" defaultValue="1982-11-18" className="w-full p-4 mb-4 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 text-gray-500" />
-              <input type="tel" placeholder="Phone Number" defaultValue="020-123-4567" className="w-full p-4 mb-6 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500" />
-              
-              <div className="flex items-center justify-between w-full p-4 mb-8 border border-gray-300 rounded-lg">
+              <input type="text" placeholder="First Name" defaultValue="Mickey" className="w-full p-4 mb-4 border rounded-lg" />
+              <input type="text" placeholder="Last Name" defaultValue="Mouse" className="w-full p-4 mb-4 border rounded-lg" />
+              <input type="date" defaultValue="1982-11-18" className="w-full p-4 mb-4 border rounded-lg text-gray-500" />
+              <input type="tel" placeholder="Phone Number" defaultValue="020-123-4567" className="w-full p-4 mb-6 border rounded-lg" />
+              <div className="flex items-center justify-between w-full p-4 mb-8 border rounded-lg">
                 <label className="text-gray-500">Profile Picture</label>
-                <label htmlFor="profilePicture" className="px-4 py-2 bg-gray-200 text-gray-900 font-semibold rounded-lg cursor-pointer hover:bg-gray-300 transition duration-150">
-                    Choose File
-                </label>
-                <input type="file" id="profilePicture" accept=".jpg,.jpeg,.png" className="hidden" />
+                <label htmlFor="profilePicture" className="px-4 py-2 bg-gray-200 text-gray-900 font-semibold rounded-lg cursor-pointer">Choose File</label>
+                <input type="file" id="profilePicture" accept="image/*" className="hidden" onChange={handleProfilePictureChange} />
               </div>
-
-              <button 
-                className="w-full py-4 text-white font-bold text-lg rounded-full shadow-lg transition duration-200"
-                style={{
-                  background: 'linear-gradient(90deg, #a78bfa, #f472b6)',
-                }}
-                onClick={() => {
-                  showAlert('Profile Saved!');
-                }}
-              >
+              <button className="w-full py-4 text-white font-bold text-lg rounded-full shadow-lg" style={{background: 'linear-gradient(90deg, #a78bfa, #f472b6)'}} onClick={() => { showAlert('Profile Saved!'); }}>
                 Save Changes
               </button>
-              <button 
-                  className="w-full py-3 mt-4 bg-red-600 text-white font-bold rounded-xl shadow-md hover:bg-red-700 transition duration-150" 
-                  onClick={() => {
-                      showAlert('You have been logged out.');
-                      showScreen('welcomeChoice');
-                  }}
-                >
+              <button className="w-full py-3 mt-4 bg-red-600 text-white font-bold rounded-xl shadow-md" onClick={() => { showAlert('You have been logged out.'); setProfilePictureUrl(''); showScreen('welcomeChoice');}}>
                   Log Out
                 </button>
             </div>
@@ -656,32 +783,20 @@ const App = () => {
 
 // --- Sub-Components ---
 
-const Header: React.FC<HeaderProps> = ({ title, onBack, showProfileIcon, showScreen }) => (
-  <header className="relative flex items-center justify-between p-4 bg-white border-b border-gray-200 shadow-md sticky top-0 z-10">
+const Header: React.FC<HeaderProps> = ({ title, onBack, showProfileIcon, showScreen, hideBackButton, profilePictureUrl }) => (
+  <header className="relative flex items-center justify-between p-4 bg-white border-b shadow-md sticky top-0 z-10">
     <div className="flex items-center gap-3">
-      <button
-        className="text-xl font-bold text-gray-500 hover:text-gray-700 transition"
-        onClick={onBack}
-      >
-        &larr;
-      </button>
-      <Image
-        width={40}
-        height={40}
-        className="rounded-lg"
-        src="/raw-removebg-preview.png"
-        alt="JETLAY Logo"
-      />
+      {!hideBackButton && (<button className="text-xl font-bold text-gray-500" onClick={onBack}>&larr;</button>)}
+      <Image width={40} height={40} className="rounded-lg" src="/raw-removebg-preview.png" alt="JETLAY Logo"/>
       <h2 className="text-2xl font-semibold text-gray-900 m-0">{title}</h2>
     </div>
-
-    {/* Profile button in the top right */}
     {showProfileIcon && (
-      <div
-        onClick={() => showScreen("user")}
-        className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 shadow-md cursor-pointer hover:bg-gray-200 transition"
-      >
-        <span className="text-xl">👤</span>
+      <div onClick={() => showScreen("user")} className="relative flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 shadow-md cursor-pointer overflow-hidden">
+        {profilePictureUrl ? (
+          <Image src={profilePictureUrl} alt="Profile" layout="fill" objectFit="cover" />
+        ) : (
+          <span className="text-xl">👤</span>
+        )}
       </div>
     )}
   </header>
