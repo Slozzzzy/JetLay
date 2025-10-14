@@ -87,7 +87,7 @@ const App = () => {
         setCurrentScreen('dashboard');
       } else {
         console.log('Auth state: logged out');
-        setCurrentScreen('welcomeChoice');
+        setCurrentScreen('splash');
       }
     });
 
@@ -701,14 +701,19 @@ const App = () => {
                 Save Changes
               </button>
               <button 
-                  className="w-full py-3 mt-4 bg-red-600 text-white font-bold rounded-xl shadow-md hover:bg-red-700 transition duration-150" 
-                  onClick={() => {
-                      showAlert('You have been logged out.');
-                      showScreen('welcomeChoice');
-                  }}
-                >
-                  Log Out
-                </button>
+                className="w-full py-3 mt-4 bg-red-600 text-white font-bold rounded-xl shadow-md hover:bg-red-700 transition duration-150" 
+                onClick={async () => {
+                  const { error } = await supabase.auth.signOut(); // <-- this actually removes the session
+                  if (error) {
+                    console.error('Sign out error:', error);
+                  }
+                  showAlert('You have been logged out.');
+                  setCurrentScreen('welcomeChoice');
+                }}
+              >
+                Log Out
+              </button>
+
             </div>
           </div>
         );
