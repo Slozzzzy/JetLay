@@ -190,6 +190,31 @@ const App = () => {
     }
   }
 
+// --- User Profile State (for header icon) ---
+const [profile, setProfile] = useState<any>(null)
+
+// Fetch user profile after login
+useEffect(() => {
+  const fetchProfile = async () => {
+    const { data: userData } = await supabase.auth.getUser()
+    if (!userData.user) return
+
+    const { data: profileData, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userData.user.id)
+      .single()
+
+    if (error) {
+      console.error('Error fetching profile:', error)
+    } else {
+      setProfile(profileData)
+    }
+  }
+
+  fetchProfile()
+}, [currentScreen]) // re-run when screen changes
+
 
   
   // --- Screen Definitions (JSX) ---
@@ -670,50 +695,158 @@ const App = () => {
                 <h1 className="text-3xl font-bold text-gray-900">User Profile</h1>
               </div>
 
+              
               <div className="flex justify-center mb-6">
+                {profile?.avatar_url ? (
+                  <img
+                    src = {profile.avatar_url}
+                    alt = "Profile"
+                    className = "w-32 h-32 rounded-full object-cover shadow-lg"
+                  />
+                ) : profile?.google_avater_url ? (
+                    <img
+                      src = {profile.google_avater_url}
+                      alt = "Google Avatar"
+                      className = "w-32 h-32 rounded-full object-cover shadow-lg"
+                  />
+                ) : (
                 <div className="w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center text-gray-400 text-6xl">
                   👤
                 </div>
+                )}
               </div>
 
-              <input type="text" placeholder="First Name" defaultValue="Mickey" className="w-full p-4 mb-4 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500" />
-              <input type="text" placeholder="Last Name" defaultValue="Mouse" className="w-full p-4 mb-4 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500" />
-              <input type="date" placeholder="Date of Birth" defaultValue="1982-11-18" className="w-full p-4 mb-4 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 text-gray-500" />
-              <input type="tel" placeholder="Phone Number" defaultValue="020-123-4567" className="w-full p-4 mb-6 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500" />
+              <input
+                type="text"
+                placeholder="First Name"
+                value={profile?.first_name || ''}
+                onChange={(e) =>
+                  setProfile({ ...profile, first_name: e.target.value })
+                } 
+                className="w-full p-4 mb-4 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+              />
               
+              <input
+                type="text"
+                placeholder="Last Name"
+                value={profile?.last_name || ''}
+                onChange={(e) =>
+                  setProfile({ ...profile, last_name: e.target.value })
+                }
+                className="w-full p-4 mb-4 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+              />
+
+              <input
+                type="date"
+                placeholder="Birth Date"
+                value={profile?.birth_date || ''}
+                onChange={(e) => setProfile({ ...profile, birth_date: e.target.value })}
+                className="w-full p-4 mb-6 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+              />
+
+              <input
+                type="tel"
+                placeholder="Phone Number"
+                value={profile?.phone || ''}
+                onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                className="w-full p-4 mb-6 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+              />
+
               <div className="flex items-center justify-between w-full p-4 mb-8 border border-gray-300 rounded-lg">
                 <label className="text-gray-500">Profile Picture</label>
-                <label htmlFor="profilePicture" className="px-4 py-2 bg-gray-200 text-gray-900 font-semibold rounded-lg cursor-pointer hover:bg-gray-300 transition duration-150">
-                    Choose File
-                </label>
-                <input type="file" id="profilePicture" accept=".jpg,.jpeg,.png" className="hidden" />
-              </div>
+                <label
+                  htmlFor="profilePicture"
+                  className="px-4 py-2 bg-gray-200 text-gray-900 font-semibold rounded-lg cursor-pointer hover:bg-gray-300 transition duration-150"
+                >
+                Choose File
+              </label>
+              <input
+                type="file"
+                id="profilePicture"
+                accept=".jpg,.jpeg,.png"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0]
+                  if (!file || !profile?.id) return
 
+                try {
+                  const fileExt = file.name.split('.').pop()
+                  const fileName = `${profile.id}.${fileExt}`
+                  const filePath = `avatars/${fileName}`
+
+                // Upload the file to Supabase Storage
+                  const { error: uploadError } = await supabase.storage
+                    .from('avatars')
+                    .upload(filePath, file, { upsert: true })
+
+                  if (uploadError) throw uploadError
+
+                // Get public URL for the uploaded file
+                  const { data: publicURLData } = supabase.storage
+                    .from('avatars')
+                    .getPublicUrl(filePath)
+
+                  const publicURL = publicURLData.publicUrl
+
+                // Update profile in the database
+                  const { error: updateError } = await supabase
+                    .from('profiles')
+                    .update({ avatar_url: publicURL })
+                    .eq('id', profile.id)
+
+                  if (updateError) throw updateError
+
+                // Update state and show alert
+                  setProfile({ ...profile, avatar_url: publicURL })
+                  showAlert('Profile picture updated successfully!')
+                } catch (error) {
+                  console.error('Error uploading image:', error)
+                  showAlert('Failed to upload image.')
+                }
+              }}
+            />
+          </div>
+
+             
+              
               <button 
                 className="w-full py-4 text-white font-bold text-lg rounded-full shadow-lg transition duration-200"
                 style={{
                   background: 'linear-gradient(90deg, #a78bfa, #f472b6)',
                 }}
-                onClick={() => {
+                onClick={async () => {
+                  const { error } = await supabase
+                  .from('profiles')
+                  .update({ 
+                    first_name: profile.first_name,
+                    last_name: profile.last_name,
+                    phone: profile.phone, 
+                    birth_date: profile.birth_date, 
+                    avatar_url: profile.avatar_url
+                  })
+                  .eq('id', profile.id)
+
+                if (error) {
+                  console.error('Error updating profile:', error);
+                  showAlert('Failed to update profile!');
+                } else {
                   showAlert('Profile Saved!');
-                }}
+                }
+              }}
               >
                 Save Changes
               </button>
+              
               <button 
-                className="w-full py-3 mt-4 bg-red-600 text-white font-bold rounded-xl shadow-md hover:bg-red-700 transition duration-150" 
-                onClick={async () => {
-                  const { error } = await supabase.auth.signOut(); // <-- this actually removes the session
-                  if (error) {
-                    console.error('Sign out error:', error);
-                  }
-                  showAlert('You have been logged out.');
-                  setCurrentScreen('welcomeChoice');
-                }}
-              >
-                Log Out
-              </button>
-
+                  className="w-full py-3 mt-4 bg-red-600 text-white font-bold rounded-xl shadow-md hover:bg-red-700 transition duration-150" 
+                  onClick={async () => {
+                    await supabase.auth.signOut()
+                    showAlert('You have been logged out.')
+                    showScreen('welcomeChoice')
+                  }}
+                >
+                  Log Out
+                </button>
             </div>
           </div>
         );
