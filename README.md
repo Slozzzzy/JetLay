@@ -6,10 +6,9 @@ Built for CPE334 Software Engineering final project, KMUTT.
 ---
 
 ## 🚀 Tech Stack
-- **Frontend:** Next.js 14 (App Router, TypeScript)
+- **Frontend:** Next.js (App Router, TypeScript)
 - **Backend / DB:** Supabase (Postgres + Auth + Storage)
-- **Mobile:** Capacitor (Android/iOS build support)
-- **UI Components:** shadcn/ui
+- **Mobile:** Capacitor Wrapper (Android/iOS build support)
 - **Deployment:** Vercel (Web), App Stores/ Google Play (Mobile) (Theoretically)
 
 ---
