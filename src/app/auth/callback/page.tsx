@@ -1,35 +1,40 @@
 'use client'
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 
-export default function AuthCallback() {
+function CallbackCore() {
   const router = useRouter()
+  const params = useSearchParams()
 
   useEffect(() => {
-    const handleRedirect = async () => {
-      const { data, error } = await supabase.auth.getSession()
-      if (error) {
-        console.error('Callback error:', error)
-        router.push('/')
-        return
+    (async () => {
+      const code = params.get('code')
+      const next = params.get('next') ?? '/'
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code)
+        if (error) console.error('Exchange code error:', error)
       }
-
-      if (data?.session) {
-        console.log('Logged in user:', data.session.user)
-        router.push('/') // go back to your main app
-      } else {
-        router.push('/')
-      }
-    }
-
-    handleRedirect()
-  }, [router])
+      router.replace(next) // or '/'
+    })()
+  }, [params, router])
 
   return (
     <div className="flex items-center justify-center h-screen">
       <p className="text-lg text-gray-700">Redirecting...</p>
     </div>
+  )
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center h-screen">
+        <p className="text-lg text-gray-700">Redirecting...</p>
+      </div>
+    }>
+      <CallbackCore />
+    </Suspense>
   )
 }
