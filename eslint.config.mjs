@@ -20,6 +20,14 @@ const eslintConfig = [
       "next-env.d.ts",
     ],
   },
+  // Override rules to allow explicit `any` types in TypeScript
+  {
+    languageOptions: {
+      parserOptions: {
+        project: "./tsconfig.json",
+      },
+    },
+  },
 ];
 
 export default eslintConfig;

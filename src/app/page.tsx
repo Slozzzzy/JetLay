@@ -190,8 +190,18 @@ const App = () => {
     }
   }
 
+interface Profile {
+  id: string
+  avatar_url?: string | null
+  phone?: string | null
+  birth_date?: string | null // Supabase returns date as ISO string
+  created_at: string
+  updated_at: string
+  first_name?: string | null
+  last_name?: string | null
+}
 // --- User Profile State (for header icon) ---
-const [profile, setProfile] = useState<any>(null)
+const [profile, setProfile] = useState<Profile | null>(null)
 
 // Fetch user profile after login
 useEffect(() => {
@@ -703,12 +713,6 @@ useEffect(() => {
                     alt = "Profile"
                     className = "w-32 h-32 rounded-full object-cover shadow-lg"
                   />
-                ) : profile?.google_avater_url ? (
-                    <img
-                      src = {profile.google_avater_url}
-                      alt = "Google Avatar"
-                      className = "w-32 h-32 rounded-full object-cover shadow-lg"
-                  />
                 ) : (
                 <div className="w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center text-gray-400 text-6xl">
                   👤
@@ -720,9 +724,7 @@ useEffect(() => {
                 type="text"
                 placeholder="First Name"
                 value={profile?.first_name || ''}
-                onChange={(e) =>
-                  setProfile({ ...profile, first_name: e.target.value })
-                } 
+                onChange={(e) => setProfile(prev => prev ? { ...prev, first_name: e.target.value } : null)}
                 className="w-full p-4 mb-4 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
               />
               
@@ -730,9 +732,7 @@ useEffect(() => {
                 type="text"
                 placeholder="Last Name"
                 value={profile?.last_name || ''}
-                onChange={(e) =>
-                  setProfile({ ...profile, last_name: e.target.value })
-                }
+                onChange={(e) => setProfile(prev => prev ? { ...prev, last_name: e.target.value } : null)}
                 className="w-full p-4 mb-4 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
               />
 
@@ -740,7 +740,7 @@ useEffect(() => {
                 type="date"
                 placeholder="Birth Date"
                 value={profile?.birth_date || ''}
-                onChange={(e) => setProfile({ ...profile, birth_date: e.target.value })}
+                onChange={(e) => setProfile(prev => prev ? { ...prev, birth_date: e.target.value } : null)}
                 className="w-full p-4 mb-6 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
               />
 
@@ -748,7 +748,7 @@ useEffect(() => {
                 type="tel"
                 placeholder="Phone Number"
                 value={profile?.phone || ''}
-                onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                onChange={(e) => setProfile(prev => prev ? { ...prev, phone: e.target.value } : null)}
                 className="w-full p-4 mb-6 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500"
               />
 
@@ -807,35 +807,38 @@ useEffect(() => {
             />
           </div>
 
-             
-              
-              <button 
+                <button
                 className="w-full py-4 text-white font-bold text-lg rounded-full shadow-lg transition duration-200"
                 style={{
                   background: 'linear-gradient(90deg, #a78bfa, #f472b6)',
                 }}
                 onClick={async () => {
+                  if (!profile) {
+                  showAlert("Profile not loaded yet!");
+                  return;
+                  }
+
                   const { error } = await supabase
-                  .from('profiles')
-                  .update({ 
+                  .from("profiles")
+                  .update({
                     first_name: profile.first_name,
                     last_name: profile.last_name,
-                    phone: profile.phone, 
-                    birth_date: profile.birth_date, 
-                    avatar_url: profile.avatar_url
+                    phone: profile.phone,
+                    birth_date: profile.birth_date,
+                    avatar_url: profile.avatar_url,
                   })
-                  .eq('id', profile.id)
+                  .eq("id", profile.id);
 
-                if (error) {
-                  console.error('Error updating profile:', error);
-                  showAlert('Failed to update profile!');
-                } else {
-                  showAlert('Profile Saved!');
-                }
-              }}
-              >
+                  if (error) {
+                  console.error("Error updating profile:", error);
+                  showAlert("Failed to update profile!");
+                  } else {
+                  showAlert("Profile Saved!");
+                  }
+                }}
+                >
                 Save Changes
-              </button>
+                </button>
               
               <button 
                   className="w-full py-3 mt-4 bg-red-600 text-white font-bold rounded-xl shadow-md hover:bg-red-700 transition duration-150" 
