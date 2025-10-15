@@ -1,9 +1,10 @@
 // src/components/auth/LoginScreen.tsx
 import React, { useState } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import Header from '@/components/core/Header';
-import { supabase } from '@/lib/supabaseClient';
 import { ScreenProps } from '@/types';
+import DashboardScreen from '@/components/screens/DashboardScreen';
 
 interface LoginProps extends Omit<ScreenProps, 'profile' | 'setProfile'> {
   handleGoogleLogin: () => void;
@@ -12,20 +13,35 @@ interface LoginProps extends Omit<ScreenProps, 'profile' | 'setProfile'> {
 const LoginScreen: React.FC<LoginProps> = ({ showScreen, showAlert, handleGoogleLogin }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const router = useRouter();
 
     const handleLogin = async () => {
-        const { error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
+      if (!email || !password) {
+        showAlert('Please enter both email and password.');
+        return;
+      }
 
-        if (error) {
-            showAlert(error.message);
-        } else {
-            // The onAuthStateChange listener in page.tsx will handle navigation
-            showAlert('Login successful!');
-        }
-    };
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        showAlert(result.error || 'Login failed.');
+        return;
+      }
+
+      showAlert('Login successful!');
+      showScreen('dashboard');
+      } catch (err) {
+      console.error('Login error:', err);
+      showAlert('An unexpected error occurred. Please try again.');
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-purple-50">
@@ -41,7 +57,8 @@ const LoginScreen: React.FC<LoginProps> = ({ showScreen, showAlert, handleGoogle
               Forgot Password?
             </span>
           </div>
-          <button className="w-full py-3 mb-4 font-bold text-lg rounded-xl shadow-lg transition" style={{ background: 'linear-gradient(90deg, #d8b4fe, #fbcfe8)', color: '#1e1b4b' }} onClick={handleLogin}>
+          <button className="w-full py-3 mb-4 font-bold text-lg rounded-xl shadow-lg transition" style={{ background: 'linear-gradient(90deg, #d8b4fe, #fbcfe8)', color: '#1e1b4b' }} 
+          onClick={handleLogin}>
             Sign In
           </button>
           <button onClick={handleGoogleLogin} className="flex items-center justify-center w-full py-3 bg-white border border-gray-300 rounded-lg">

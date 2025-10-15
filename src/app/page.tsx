@@ -153,6 +153,7 @@ const App = () => {
 
   const screenProps = { showScreen, showAlert, profile, setProfile };
 
+  // ID for the screen to render
   const renderScreen = () => {
     if (currentScreen === 'loading') return null;
         switch (currentScreen) {

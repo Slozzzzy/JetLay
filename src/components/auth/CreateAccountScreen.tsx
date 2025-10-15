@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import Header from '@/components/core/Header';
-import { supabase } from '@/lib/supabaseClient';
+import { PASSWORD_REGEX } from '@/app/api/auth/_utils/password';
 import { ScreenProps } from '@/types';
 
 interface CreateAccountProps extends Omit<ScreenProps, 'profile' | 'setProfile'> {
@@ -13,33 +13,42 @@ const CreateAccountScreen: React.FC<CreateAccountProps> = ({ showScreen, showAle
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleSignUp = async () => {
-    if (!email || !password || !fullName) {
+    if (!fullName || !email || !password) {
       showAlert('Please fill in all fields.');
       return;
     }
+    if (!PASSWORD_REGEX.test(password)) {
+      showAlert('Password must be at least 8 characters and include uppercase, lowercase, number, and special character.');
+      return;
+    }
 
-    const [firstName, ...lastNameParts] = fullName.split(' ');
-    const lastName = lastNameParts.join(' ');
+    try {
+      setLoading(true);
 
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          first_name: firstName,
-          last_name: lastName,
-          avatar_url: '', // Default empty avatar
-        },
-      },
-    });
+      const res = await fetch('/api/auth/create-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fullName: fullName.trim(), email: email.trim(), password }),
+      });
 
-    if (error) {
-      showAlert(error.message);
-    } else if (data.user) {
+      const result = await res.json();
+
+      if (!res.ok) {
+        showAlert(result.error || 'Sign up failed.');
+        return;
+        }
+
+      
       showAlert('Sign up successful! Please check your email to verify your account.');
       showScreen('welcomeBack');
+    } catch (err) {
+      console.error('Sign up error:', err);
+      showAlert('Unexpected error. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -53,8 +62,11 @@ const CreateAccountScreen: React.FC<CreateAccountProps> = ({ showScreen, showAle
           <input type="text" placeholder="Full Name" className="w-full p-3 mb-4 border border-gray-300 rounded-lg" value={fullName} onChange={(e) => setFullName(e.target.value)} />
           <input type="email" placeholder="Email Address" className="w-full p-3 mb-4 border border-gray-300 rounded-lg" value={email} onChange={(e) => setEmail(e.target.value)} />
           <input type="password" placeholder="Password" className="w-full p-3 mb-4 border border-gray-300 rounded-lg" value={password} onChange={(e) => setPassword(e.target.value)} />
-          <button className="w-full py-3 mb-4 font-bold text-lg rounded-xl shadow-lg transition" style={{ background: 'linear-gradient(90deg, #d8b4fe, #fbcfe8)', color: '#1e1b4b' }} onClick={handleSignUp}>
-            Sign Up
+          <button className="w-full py-3 mb-4 font-bold text-lg rounded-xl shadow-lg transition" style={{ background: 'linear-gradient(90deg, #d8b4fe, #fbcfe8)', color: '#1e1b4b' }}
+          onClick = {handleSignUp}
+          disabled = {loading}
+        >
+          {loading ? 'Creating…' : 'Sign Up'}
           </button>
           <button onClick={handleGoogleLogin} className="flex items-center justify-center w-full py-3 bg-white border border-gray-300 rounded-lg">
             <Image src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg" alt="Google G Logo" width={24} height={24} className="mr-3" />
