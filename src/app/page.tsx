@@ -272,11 +272,10 @@ useEffect(() => {
                 0%, 100% { transform: translate(0, 0); } 10% { transform: translate(-5%, -10%); } 20% { transform: translate(-15%, 5%); } 30% { transform: translate(7%, -25%); } 40% { transform: translate(-5%, 25%); } 50% { transform: translate(-15%, 10%); } 60% { transform: translate(15%, 0%); } 70% { transform: translate(0%, 15%); } 80% { transform: translate(3%, 35%); } 90% { transform: translate(-10%, 10%); }
               }
             `}</style>
-            <h1 className="text-5xl font-extrabold text-gray-900 mb-4">WELCOME =)</h1>
+            <h1 className="text-5xl font-extrabold text-gray-900 mb-4">👋 Hey there !</h1>
             <div className="text-gray-800 space-y-1 mb-10">
-              <p>Hi there!</p>
-              <p>We&apos;re here to make it easier to explore new places.</p>
-              <p>The choice is yours : Login or Create an account.</p>
+              <p>This is JetLay, the app that helps you manage all the mess in document preparations.</p>
+              <p></p>
             </div>
             
              <div className="relative w-28 h-28 mb-10">
