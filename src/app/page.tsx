@@ -201,7 +201,16 @@ interface Profile {
   last_name?: string | null
 }
 // --- User Profile State (for header icon) ---
-const [profile, setProfile] = useState<Profile | null>(null)
+const [profile, setProfile] = useState<Profile | null>({
+  id: '',
+  avatar_url: '',
+  phone: '',
+  birth_date: '',
+  created_at: '',
+  updated_at: '',
+  first_name: '',
+  last_name: '',
+});
 
 // Fetch user profile after login
 useEffect(() => {
@@ -225,9 +234,26 @@ useEffect(() => {
   fetchProfile()
 }, [currentScreen]) // re-run when screen changes
 
+useEffect(() => {
+  const loadProfile = async () => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
-  
-  // --- Screen Definitions (JSX) ---
+    const userId = session?.user?.id;
+    if (!userId) return;
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", userId)
+      .single();
+
+    setProfile(data);
+  };
+
+  loadProfile();
+}, []);
 
   const renderScreen = () => {
     switch (currentScreen) {
