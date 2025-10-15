@@ -708,9 +708,11 @@ useEffect(() => {
               
               <div className="flex justify-center mb-6">
                 {profile?.avatar_url ? (
-                  <img
+                  <Image
                     src = {profile.avatar_url}
                     alt = "Profile"
+                    width={120}
+                    height={120}
                     className = "w-32 h-32 rounded-full object-cover shadow-lg"
                   />
                 ) : (
