@@ -63,7 +63,7 @@ const UserProfileScreen: React.FC<UserProfileProps> = ({ showScreen, showAlert, 
             setLocalProfile(updatedProfile);
             setProfile(updatedProfile);
             showAlert('Profile picture updated!');
-        } catch (error) {
+        } catch (_error){
             showAlert('Failed to upload image.');
         }
     };

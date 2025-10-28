@@ -62,18 +62,24 @@ const App = () => {
         // Try to pick up a session from the URL first (OAuth redirect)
         if (typeof window !== 'undefined') {
           try {
-            // @ts-ignore - some versions have getSessionFromUrl
-            if (typeof supabase.auth.getSessionFromUrl === 'function') {
-              await supabase.auth.getSessionFromUrl({ storeSession: true }).catch(() => null);
+            // runtime-safe lookup of getSessionFromUrl (avoids @ts-ignore and explicit any)
+            const maybeGetSessionFromUrl = (supabase.auth as unknown as Record<string, unknown>)['getSessionFromUrl'] as
+              | ((opts?: { storeSession?: boolean }) => Promise<unknown>)
+              | undefined;
+          
+            if (typeof maybeGetSessionFromUrl === 'function') {
+              await maybeGetSessionFromUrl({ storeSession: true }).catch(() => null);
             }
-          } catch {}
+          } catch {
+            // ignore: best-effort only
+          }
         }
 
         const sessionPromise = supabase.auth.getSession().catch(() => ({ data: { session: null } }));
         const [, sessionResult] = await Promise.all([minWait, sessionPromise]);
         if (!mounted) return;
 
-        let session = sessionResult?.data?.session ?? null;
+        const session = sessionResult?.data?.session ?? null;
 
         // Check for token in localStorage
         const tokenKey = typeof window !== 'undefined'

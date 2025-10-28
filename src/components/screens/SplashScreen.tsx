@@ -1,46 +1,67 @@
 // src/components/screens/SplashScreen.tsx
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 
 type Props = {
   onFinish?: () => void;
+  sessionReady: boolean;
 };
 
 const TRANSITION_MS = 400; // CSS transition duration (must match below)
 const AUTO_HIDE_AFTER_LOAD_MS = 600; // wait after image load before starting exit
 const FALLBACK_TIMEOUT_MS = 4000; // force hide if something goes wrong
 
-const SplashScreen: React.FC<Props> = ({ onFinish }) => {
+const SplashScreen: React.FC<Props> = ({ onFinish, sessionReady }) => {
   const [exiting, setExiting] = useState(false);
+  const exitingRef = useRef(false); // avoid stale closures
   const fallbackTimer = useRef<number | null>(null);
   const finishedCalled = useRef(false);
 
+  const notifyParent = useCallback(() => {
+    if (finishedCalled.current) return;
+    finishedCalled.current = true;
+    if (typeof onFinish === 'function') onFinish();
+  }, [onFinish]);
+
+  const startExit = useCallback(() => {
+    if (exitingRef.current) return;
+    exitingRef.current = true;
+    setExiting(true);
+    window.setTimeout(() => {
+      notifyParent();
+    }, TRANSITION_MS + 20);
+  }, [notifyParent]);
+
+  // Start fallback timer when sessionReady flips true
   useEffect(() => {
-    // safety: auto-start exit after fallback timeout
-    fallbackTimer.current = window.setTimeout(() => startExit(), FALLBACK_TIMEOUT_MS);
+    if (!sessionReady) return;
+
+    if (fallbackTimer.current) {
+      clearTimeout(fallbackTimer.current);
+      fallbackTimer.current = null;
+    }
+
+    fallbackTimer.current = window.setTimeout(() => {
+      startExit();
+    }, FALLBACK_TIMEOUT_MS);
+
     return () => {
       if (fallbackTimer.current) {
         clearTimeout(fallbackTimer.current);
         fallbackTimer.current = null;
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionReady, startExit]);
+
+  // cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (fallbackTimer.current) {
+        clearTimeout(fallbackTimer.current);
+        fallbackTimer.current = null;
+      }
+    };
   }, []);
-
-  function notifyParent() {
-    if (finishedCalled.current) return;
-    finishedCalled.current = true;
-    if (typeof onFinish === 'function') onFinish();
-  }
-
-  function startExit() {
-    if (exiting) return;
-    setExiting(true);
-    // after CSS transition, notify parent to hide the overlay
-    window.setTimeout(() => {
-      notifyParent();
-    }, TRANSITION_MS + 20);
-  }
 
   return (
     <>
@@ -57,7 +78,7 @@ const SplashScreen: React.FC<Props> = ({ onFinish }) => {
           align-items: center;
           justify-content: center;
           z-index: 9999;
-          background: var(--splash-bg, rgba(243,232,255,1)); /* change to rgba(...) if you want translucency */
+          background: var(--splash-bg, rgba(243,232,255,1));
           transition: opacity ${TRANSITION_MS}ms ease, visibility ${TRANSITION_MS}ms ease;
           opacity: 1;
           visibility: visible;
@@ -91,7 +112,6 @@ const SplashScreen: React.FC<Props> = ({ onFinish }) => {
             priority
             loading="eager"
             onLoad={() => {
-              // clear fallback and start exit after a short delay so animation finishes
               if (fallbackTimer.current) {
                 clearTimeout(fallbackTimer.current);
                 fallbackTimer.current = null;
@@ -99,7 +119,6 @@ const SplashScreen: React.FC<Props> = ({ onFinish }) => {
               window.setTimeout(() => startExit(), AUTO_HIDE_AFTER_LOAD_MS);
             }}
             onError={() => {
-              // if image fails, still hide soon
               if (fallbackTimer.current) {
                 clearTimeout(fallbackTimer.current);
                 fallbackTimer.current = null;
