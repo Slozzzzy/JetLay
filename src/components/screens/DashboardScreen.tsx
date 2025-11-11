@@ -4,7 +4,15 @@ import Image from 'next/image';
 import Header from '@/components/core/Header';
 import { ScreenProps } from '@/types';
 
-const DashboardScreen: React.FC<ScreenProps> = ({ showScreen, profile, setProfile, showAlert }) => {
+// --- MODIFIED: Accept new prop ---
+const DashboardScreen: React.FC<ScreenProps> = ({ 
+  showScreen, 
+  profile, 
+  setProfile, 
+  showAlert, 
+  handleNotificationClick // <-- 1. Get the new prop
+}) => {
+  
   const dashboardCards = [
     { id: 'visa', icon: '/visa.png', title: 'Visa Requirement', detail: 'Check country entry rules.' },
     { id: 'upload', icon: '/document.png', title: 'Document Upload', detail: 'Store and track your files.' },
@@ -13,6 +21,9 @@ const DashboardScreen: React.FC<ScreenProps> = ({ showScreen, profile, setProfil
   ];
   
   const userName = profile?.first_name || 'User';
+
+  // --- MOCK DATA ---
+  const mockNotificationCount = 3; // Based on your design
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-purple-200 via-pink-200 to-rose-200 grainy-bg">
@@ -25,6 +36,12 @@ const DashboardScreen: React.FC<ScreenProps> = ({ showScreen, profile, setProfil
         showProfileIcon={true} 
         showScreen={showScreen}
         profile={profile}
+        
+        // --- 2. ADD THESE PROPS ---
+        // This is what makes the button appear
+        showNotificationIcon={true}
+        notificationCount={mockNotificationCount}
+        onNotificationClick={handleNotificationClick}
       />
       <div className="p-6 flex-1">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-2">

@@ -34,10 +34,10 @@ const UserProfileScreen: React.FC<UserProfileProps> = ({ showScreen, showAlert, 
             .eq("id", localProfile.id);
 
         if (error) {
-            showAlert("Failed to update profile!");
+            showAlert("Failed to update profile!", "error");
         } else {
             setProfile(localProfile); // Update the main app state
-            showAlert("Profile Saved!");
+            showAlert("Profile Saved!", "success");
         }
     };
     
@@ -62,9 +62,9 @@ const UserProfileScreen: React.FC<UserProfileProps> = ({ showScreen, showAlert, 
             const updatedProfile = { ...localProfile, avatar_url: publicURL };
             setLocalProfile(updatedProfile);
             setProfile(updatedProfile);
-            showAlert('Profile picture updated!');
+            showAlert('Profile picture updated!', "success");
         } catch (_error){
-            showAlert('Failed to upload image.');
+            showAlert('Failed to upload image.', "error");
         }
     };
 

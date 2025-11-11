@@ -5,10 +5,11 @@ import type { Profile } from '@/types';
 
 // Core Components
 import CustomAlert from '@/components/core/CustomAlert';
+import NotificationSidebar from '@/components/core/NotificationSidebar'; // --- ADDED ---
 
 // Screen Components
 import SplashScreen from '@/components/screens/SplashScreen';
-import WelcomeChoiceScreen from '@/components/screens/WelcomeChoiceScreen';
+import WelcomeChoiceScreen from '@/components/screens/WelcomeChoiceScreen'; // --- Import all your screens ---
 import CreateAccountScreen from '@/components/auth/CreateAccountScreen';
 import LoginScreen from '@/components/auth/LoginScreen';
 import ForgotPasswordScreen from '@/components/auth/ForgotPasswordScreen';
@@ -28,13 +29,31 @@ const App = () => {
   const [sessionReady, setSessionReady] = useState(false);
 
   const [currentScreen, setCurrentScreen] = useState('welcomeChoice');
-  const [alertMessage, setAlertMessage] = useState('');
   const [profile, setProfile] = useState<Profile | null>(null);
 
-  const showScreen = useCallback((id: string) => setCurrentScreen(id), []);
-  const showAlert = useCallback((message: string) => setAlertMessage(message), []);
-  const closeAlert = useCallback(() => setAlertMessage(''), []);
+  // --- CHANGED ---: Updated alert system to use an object
+  const [alertInfo, setAlertInfo] = useState({
+    show: false,
+    message: '',
+    type: 'info' as 'success' | 'error' | 'info',
+  });
+  
+  // --- ADDED ---: State for the new notification sidebar
+  const [isNotiSidebarOpen, setIsNotiSidebarOpen] = useState(false);
 
+  const showScreen = useCallback((id: string) => setCurrentScreen(id), []);
+
+  // --- CHANGED ---: Updated showAlert to handle type
+  const showAlert = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setAlertInfo({ show: true, message, type });
+  }, []);
+
+  // --- CHANGED ---: Updated closeAlert to hide the object
+  const closeAlert = useCallback(() => {
+    setAlertInfo(prev => ({ ...prev, show: false }));
+  }, []);
+
+  // ... (Your entire useEffect for auth logic remains unchanged) ...
   useEffect(() => {
     let mounted = true;
 
@@ -141,17 +160,24 @@ const App = () => {
 
   const handleGoogleLogin = useCallback(async () => {
     const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
-    if (error) showAlert('Google sign-in failed.');
+    if (error) showAlert('Google sign-in failed.', 'error'); // --- CHANGED ---
   }, [showAlert]);
 
   const handleSignOut = useCallback(async () => {
     await supabase.auth.signOut();
     setProfile(null);
     setCurrentScreen('welcomeChoice');
-    showAlert('You have been logged out.');
+    showAlert('You have been logged out.', 'success'); // --- CHANGED ---
   }, [showAlert]);
 
-  const screenProps = { showScreen, showAlert, profile, setProfile };
+  // --- CHANGED ---: Added handleNotificationClick to props
+  const screenProps = { 
+    showScreen, 
+    showAlert, 
+    profile, 
+    setProfile, 
+    handleNotificationClick: () => setIsNotiSidebarOpen(true) 
+  };
 
   const renderScreen = () => {
     if (currentScreen === 'loading') return null;
@@ -174,12 +200,23 @@ const App = () => {
         }
       };
 
-  // SplashScreen controls its own fade and calls onFinish when done
   const handleSplashFinish = useCallback(() => setShowSplash(false), []);
 
   return (
     <div className="min-h-screen">
-      <CustomAlert message={alertMessage} onClose={closeAlert} />
+      {/* --- CHANGED ---: Updated CustomAlert props */}
+      {alertInfo.show && (
+        <CustomAlert
+          message={alertInfo.message}
+          onClose={closeAlert}
+        />
+      )}
+      {/* --- ADDED ---: Render the sidebar component */}
+      <NotificationSidebar 
+        isOpen={isNotiSidebarOpen} 
+        onClose={() => setIsNotiSidebarOpen(false)} 
+      />
+
       {renderScreen()}
       {showSplash && (
         <SplashScreen
