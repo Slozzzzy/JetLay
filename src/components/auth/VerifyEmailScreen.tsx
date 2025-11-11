@@ -15,7 +15,7 @@ const VerifyEmailScreen: React.FC<VerifyEmailProps> = ({ showScreen, showAlert }
         <button className="w-full py-3 mb-4 font-bold text-lg rounded-xl shadow-lg transition" style={{ background: 'linear-gradient(90deg, #d8b4fe, #fbcfe8)', color: '#1e1b4b' }} onClick={() => showScreen('welcomeBack')}>
           Back to Login
         </button>
-        <span className="text-purple-700 cursor-pointer font-semibold mt-4 block text-sm hover:text-purple-500" onClick={() => showAlert('Resending link (demo)')}>
+        <span className="text-purple-700 cursor-pointer font-semibold mt-4 block text-sm hover:text-purple-500" onClick={() => showAlert('Resending link (demo)', 'info')}>
           Resend Link
         </span>
       </div>

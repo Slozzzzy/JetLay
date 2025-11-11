@@ -22,7 +22,7 @@ const VisaResultScreen: React.FC<ScreenProps> = ({ showScreen, showAlert, profil
               </div>
           </div>
         <div className="mt-6 space-y-3">
-          <button className="w-full py-3 text-white font-bold rounded-xl shadow-md" style={{background: 'linear-gradient(90deg, #d8b4fe, #fbcfe8)', color: '#1e1b4b'}} onClick={() => showAlert('Open official embassy link (demo)')}>
+          <button className="w-full py-3 text-white font-bold rounded-xl shadow-md" style={{background: 'linear-gradient(90deg, #d8b4fe, #fbcfe8)', color: '#1e1b4b'}} onClick={() => showAlert('Open official embassy link (demo)', 'info')}>
             Open Official Source
           </button>
           <button className="w-full py-3 bg-gray-900 text-white font-bold rounded-xl shadow-md hover:bg-gray-700" onClick={() => showScreen('calendar')}>

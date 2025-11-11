@@ -20,10 +20,10 @@ const LoginScreen: React.FC<LoginProps> = ({ showScreen, showAlert, handleGoogle
         });
 
         if (error) {
-            showAlert(error.message);
+            showAlert(error.message, 'error');
         } else {
             // The onAuthStateChange listener in page.tsx will handle navigation
-            showAlert('Login successful!');
+            showAlert('Login successful!', 'success');
         }
     };
 

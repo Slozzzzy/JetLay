@@ -15,9 +15,9 @@ const ForgotPasswordScreen: React.FC<ForgotPasswordProps> = ({ showScreen, showA
         });
 
         if (error) {
-            showAlert(error.message);
+            showAlert(error.message, 'error');
         } else {
-            showAlert('Password reset link sent to your email.');
+            showAlert('Password reset link sent to your email.', 'success');
             showScreen('welcomeBack');
         }
     };
