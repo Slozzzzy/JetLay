@@ -32,7 +32,7 @@ const UserProfileScreen: React.FC<UserProfileProps> = ({ showScreen, showAlert, 
                 if (!resp.ok) {
                     const json = await resp.json().catch(() => ({}));
                     console.error('profile fetch failed', json);
-                    showAlert(json.error || 'Cannot load your profile.');
+                    showAlert(json.error || 'Cannot load your profile.', 'error');
                     setLoading(false);
                     return;
                 }
@@ -45,7 +45,7 @@ const UserProfileScreen: React.FC<UserProfileProps> = ({ showScreen, showAlert, 
                 setLoading(false);
             } catch (err) {
                 console.error('profile fetch error', err);
-                showAlert('Cannot load your profile.');
+                showAlert('Cannot load your profile.', 'error');
                 setLoading(false);
             }
         })();
@@ -59,24 +59,39 @@ const UserProfileScreen: React.FC<UserProfileProps> = ({ showScreen, showAlert, 
 
     const handleUpdateProfile = async () => {
         if (!localProfile) return;
+        setLoading(true);
 
-        const { error } = await supabase
-            .from("profiles")
-            .update({
-                first_name: localProfile.first_name,
-                last_name: localProfile.last_name,
-                phone: localProfile.phone,
-                birth_date: localProfile.birth_date,
-            })
-            .eq("id", localProfile.id);
+        try {
+            const resp = await fetch('/api/profile', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    first_name: localProfile.first_name,
+                    last_name: localProfile.last_name,
+                    phone: localProfile.phone,
+                    birth_date: localProfile.birth_date,
+                }),
+            });
 
-        if (error) {
-            showAlert("Failed to update profile!", "error");
-        } else {
-            setProfile(localProfile); // Update the main app state
-            showAlert("Profile Saved!", "success");
+            const json = await resp.json().catch(() => ({}));
+            if (!resp.ok) {
+                console.error('profile update failed', json);
+                showAlert(json.error || 'Failed to update profile!', 'error');
+                setLoading(false);
+                return;
+            }
+
+            const updated = json.profile ?? localProfile;
+            setLocalProfile(updated);
+            setProfile(updated);
+            showAlert('Profile Saved!', 'success');
+        } catch (err) {
+            console.error('update error', err);
+            showAlert('Failed to update profile!', 'error');
+        } finally {
+            setLoading(false);
         }
-        };
+    };
     
     const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];

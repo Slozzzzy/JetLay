@@ -17,7 +17,7 @@ const LoginScreen: React.FC<LoginProps> = ({ showScreen, showAlert, handleGoogle
 
     const handleLogin = async () => {
       if (!email || !password) {
-        showAlert('Please enter both email and password.');
+        showAlert('Please enter both email and password.', 'error');
         return;
       }
 
@@ -31,15 +31,15 @@ const LoginScreen: React.FC<LoginProps> = ({ showScreen, showAlert, handleGoogle
       const result = await response.json();
 
       if (!response.ok) {
-        showAlert(result.error || 'Login failed.');
+        showAlert(result.error || 'Login failed.', 'error');
         return;
       }
 
-      showAlert('Login successful!');
+      showAlert('Login successful!', 'success');
       showScreen('dashboard');
       } catch (err) {
       console.error('Login error:', err);
-      showAlert('An unexpected error occurred. Please try again.');
+      showAlert('An unexpected error occurred. Please try again.', 'error');
     }
   };
 

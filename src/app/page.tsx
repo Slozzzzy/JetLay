@@ -184,7 +184,7 @@ const App = () => {
     if (currentScreen === 'loading') return null;
         switch (currentScreen) {
           case 'welcomeChoice': return <WelcomeChoiceScreen showScreen={showScreen} />;
-          case 'createAccount': return <CreateAccountScreen {...screenProps} handleGoogleLogin={handleGoogleLogin} />;
+          case 'createAccount': return <CreateAccountScreen />;
           case 'welcomeBack': return <LoginScreen {...screenProps} handleGoogleLogin={handleGoogleLogin} />;
           case 'forgotPassword': return <ForgotPasswordScreen {...screenProps} />;
           case 'verifyEmail': return <VerifyEmailScreen {...screenProps} />;
