@@ -13,7 +13,15 @@ export interface Profile {
 // Props ทั่วไปที่ส่งจาก page.tsx ไปยัง screens ต่างๆ
 export interface ScreenProps {
   showScreen: (screen: string) => void;
-  showAlert: (message: string) => void;
+
+  // --- CHANGED ---
+  // Updated to accept the 'type' for success/error/info alerts
+  showAlert: (message: string, type: 'success' | 'error' | 'info') => void;
+
   profile: Profile | null;
   setProfile: React.Dispatch<React.SetStateAction<Profile | null>>;
+
+  // --- ADDED ---
+  // This prop opens the notification sidebar
+  handleNotificationClick?: () => void;
 }

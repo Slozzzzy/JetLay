@@ -57,32 +57,24 @@ const UserProfileScreen: React.FC<UserProfileProps> = ({ showScreen, showAlert, 
     return <div className="p-6 text-center text-gray-600">Loading profile...</div>;
   }
 
-        const handleUpdateProfile = async () => {
-        try {
-            const resp = await fetch('/api/profile', {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    first_name: localProfile.first_name ?? '',
-                    last_name:  localProfile.last_name ?? '',
-                    phone:      localProfile.phone ?? '',
-                    birth_date: localProfile.birth_date || null,
-                }),
-            });
+    const handleUpdateProfile = async () => {
+        if (!localProfile) return;
 
-            const json = await resp.json().catch(() => ({}));
-            if (!resp.ok) {
-                console.error('profile update failed', json);
-                return showAlert(json.error || 'Failed to update profile!');
-            }
+        const { error } = await supabase
+            .from("profiles")
+            .update({
+                first_name: localProfile.first_name,
+                last_name: localProfile.last_name,
+                phone: localProfile.phone,
+                birth_date: localProfile.birth_date,
+            })
+            .eq("id", localProfile.id);
 
-            const updated = json.profile ?? localProfile;
-            setLocalProfile(updated);
-            setProfile(updated);
-            showAlert('Profile Saved!');
-        } catch (err) {
-            console.error('profile update error', err);
-            showAlert('Failed to update profile!');
+        if (error) {
+            showAlert("Failed to update profile!", "error");
+        } else {
+            setProfile(localProfile); // Update the main app state
+            showAlert("Profile Saved!", "success");
         }
         };
     
@@ -113,9 +105,9 @@ const UserProfileScreen: React.FC<UserProfileProps> = ({ showScreen, showAlert, 
             const updatedProfile = { ...localProfile, avatar_url: publicURL };
             setLocalProfile(updatedProfile);
             setProfile(updatedProfile);
-            showAlert('Profile picture updated!');
+            showAlert('Profile picture updated!', "success");
         } catch (_error){
-            showAlert('Failed to upload image.');
+            showAlert('Failed to upload image.', "error");
         }
     };
 
