@@ -6,8 +6,13 @@ import { createClient } from "@supabase/supabase-js";
 // Accept an optional `cookiesStore` (an awaited cookies() result). Passing the
 // awaited store avoids calling `cookies()` synchronously inside the
 // auth-helpers library (Next.js warns about sync access to dynamic APIs).
-export const serverClient = (cookiesStore?: any) =>
-  createRouteHandlerClient({ cookies: cookiesStore ? () => cookiesStore : cookies });
+export const serverClient = (cookiesStore?: unknown) => {
+  const cookiesGetter = cookiesStore
+    ? () => Promise.resolve(cookiesStore as ReturnType<typeof cookies>)
+    : cookies;
+
+  return createRouteHandlerClient({ cookies: cookiesGetter });
+};
 
 // 🔹 Admin client for privileged actions (e.g., create/delete users)
 export const adminClient = () =>
