@@ -7,9 +7,20 @@ import { createClient } from "@supabase/supabase-js";
 // awaited store avoids calling `cookies()` synchronously inside the
 // auth-helpers library (Next.js warns about sync access to dynamic APIs).
 export const serverClient = (cookiesStore?: unknown) => {
-  const cookiesGetter = cookiesStore
-    ? () => Promise.resolve(cookiesStore as ReturnType<typeof cookies>)
-    : cookies;
+  // Normalize inputs into a getter that returns the cookie store synchronously.
+  // Using the same return shape as Next's `cookies()`.
+  type CookieGetter = () => ReturnType<typeof cookies>;
+
+  let cookiesGetter: CookieGetter;
+
+  if (typeof cookiesStore === "function") {
+    const fn = cookiesStore as () => unknown;
+    cookiesGetter = () => fn() as ReturnType<typeof cookies>;
+  } else if (cookiesStore) {
+    cookiesGetter = () => cookiesStore as ReturnType<typeof cookies>;
+  } else {
+    cookiesGetter = (cookies as unknown) as CookieGetter;
+  }
 
   return createRouteHandlerClient({ cookies: cookiesGetter });
 };

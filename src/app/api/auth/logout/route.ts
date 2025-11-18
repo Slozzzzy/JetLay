@@ -8,7 +8,7 @@ export const revalidate = 0;
 
 export async function POST() {
   const cookieStore = await cookies();
-  const supa = serverClient(cookieStore);
+  const supa = serverClient(() => cookieStore);
   await supa.auth.signOut();
 
   const res = NextResponse.json({ ok: true });

@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 export async function GET() {
   try {
     const cookieStore = await cookies();
-    const supa = serverClient(cookieStore);
+    const supa = serverClient(() => cookieStore);
 
     const { data: { user } } = await supa.auth.getUser();
     if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -31,7 +31,7 @@ export async function PATCH(req: Request) {
     const updates = body || {};
 
     const cookieStore = await cookies();
-    const supa = serverClient(cookieStore as any);
+    const supa = serverClient(() => cookieStore);
 
     const { data: { user } } = await supa.auth.getUser();
     if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });

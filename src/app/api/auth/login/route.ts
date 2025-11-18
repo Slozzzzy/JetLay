@@ -16,11 +16,22 @@ export async function POST(req: NextRequest) {
   }
 
   const cookieStore = await cookies();
-  const supa = serverClient(cookieStore);
-  const { error } = await supa.auth.signInWithPassword({ email, password });
+  const supa = serverClient(() => cookieStore);
+  let signInResult;
+  try {
+    signInResult = await supa.auth.signInWithPassword({ email, password });
+  } catch (thrown) {
+    // Log full error for debugging (server-side only)
+    console.error('signInWithPassword threw an exception', thrown);
+    return NextResponse.json({ error: 'Authentication service error' }, { status: 500 });
+  }
+
+  const { data, error } = signInResult ?? {};
 
   if (error) {
-    return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
+    console.error('login error', { email, error });
+    // Return the provider error message to the client for easier debugging.
+    return NextResponse.json({ error: (error as Error)?.message || "Invalid email or password" }, { status: 401 });
   }
 
   const res = NextResponse.json({ ok: true });

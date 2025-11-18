@@ -63,9 +63,14 @@ export default function CreateAccountScreen() {
       }
 
       router.push("/auth/callback");
-    } catch (err) {
-      const msg = (err as any)?.message ?? "An unexpected error occurred.";
-      setError(msg);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else if (typeof err === 'object' && err !== null && 'message' in err && typeof (err as { message?: unknown }).message === 'string') {
+        setError((err as { message: string }).message);
+      } else {
+        setError(String(err ?? 'An unexpected error occurred.'));
+      }
     } finally {
       setLoading(false);
     }

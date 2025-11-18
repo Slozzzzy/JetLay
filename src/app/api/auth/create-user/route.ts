@@ -79,11 +79,8 @@ export async function POST(req: NextRequest) {
       },
       { status: 201 }
     );
-  } catch (err: any) {
-    console.error("create-user error:", err);
-    return NextResponse.json(
-      { error: err.message ?? "Internal Server Error" },
-      { status: 500 }
-    );
+  } catch (err) {
+    console.error("Create user route error:", err);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

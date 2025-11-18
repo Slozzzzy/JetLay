@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Header from '@/components/core/Header';
 import { ScreenProps } from '@/types';
 import DashboardScreen from '@/components/screens/DashboardScreen';
+import { stringify } from 'querystring';
 
 interface LoginProps extends Omit<ScreenProps, 'profile' | 'setProfile'> {
   handleGoogleLogin: () => void;
@@ -26,21 +27,35 @@ const LoginScreen: React.FC<LoginProps> = ({ showScreen, showAlert, handleGoogle
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password }),
-      });
+        });
 
-      const result = await response.json();
+        // Safely parse JSON — some responses may have an empty body
+        let result: unknown = {};
+        try {
+          // If body is empty, this will throw; we catch and keep result as {}
+          result = await response.json();
+        } catch (parseErr) {
+          // ignore parse errors (empty response)
+          result = {};
+        }
 
-      if (!response.ok) {
-        showAlert(result.error || 'Login failed.', 'error');
-        return;
-      }
+        if (!response.ok) {
+          let serverError: string | undefined;
+          if (typeof result === 'object' && result !== null && 'error' in result) {
+            const e = (result as { error?: unknown }).error;
+            if (typeof e === 'string') serverError = e;
+          }
 
-      showAlert('Login successful!', 'success');
-      showScreen('dashboard');
+          showAlert(serverError ?? 'Login failed.', 'error');
+          return;
+        }
+
+        showAlert('Login successful!', 'success');
+        showScreen('dashboard');
       } catch (err) {
-      console.error('Login error:', err);
-      showAlert('An unexpected error occurred. Please try again.', 'error');
-    }
+        console.error('Login error:', err);
+        showAlert('An unexpected error occurred. Please try again.', 'error');
+      }
   };
 
   return (
