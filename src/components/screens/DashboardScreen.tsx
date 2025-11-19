@@ -4,62 +4,85 @@ import Image from 'next/image';
 import Header from '@/components/core/Header';
 import { ScreenProps } from '@/types';
 
-// --- MODIFIED: Accept new prop ---
-const DashboardScreen: React.FC<ScreenProps> = ({ 
-  showScreen, 
-  profile, 
-  setProfile, 
-  showAlert, 
-  handleNotificationClick // <-- 1. Get the new prop
+const DashboardScreen: React.FC<ScreenProps> = ({
+  showScreen,
+  profile,
+  handleNotificationClick,
 }) => {
-  
   const dashboardCards = [
     { id: 'visa', icon: '/visa.png', title: 'Visa Requirement', detail: 'Check country entry rules.' },
     { id: 'upload', icon: '/document.png', title: 'Document Upload', detail: 'Store and track your files.' },
     { id: 'calendar', icon: '/calendar.png', title: 'Calendar', detail: 'Plan your travel deadlines.' },
     { id: 'reviews', icon: '/review.png', title: 'Traveler Reviews', detail: 'Share and read experiences.' },
   ];
-  
-  const userName = profile?.first_name || 'User';
 
-  // --- MOCK DATA ---
-  const mockNotificationCount = 3; // Based on your design
+  const userName = profile?.first_name || 'User';
+  const mockNotificationCount = 3;
 
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-br from-purple-200 via-pink-200 to-rose-200 grainy-bg">
-      <style jsx global>{`
-        /* ... grainy-bg styles ... */
-      `}</style>
-      <Header 
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-purple-200 via-pink-200 to-rose-200">
+      <Header
         title={`Hello, ${userName}`}
-        onBack={() => { /* No back from dashboard */ }}
-        showProfileIcon={true} 
+        onBack={() => {}}
+        showProfileIcon
         showScreen={showScreen}
         profile={profile}
-        
-        // --- 2. ADD THESE PROPS ---
-        // This is what makes the button appear
-        showNotificationIcon={true}
+        showNotificationIcon
         notificationCount={mockNotificationCount}
         onNotificationClick={handleNotificationClick}
       />
+
       <div className="p-6 flex-1">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-2">
+        {/* Card Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {dashboardCards.map((card) => (
-            <div 
+            <div
               key={card.id}
-              className="bg-white rounded-2xl p-6 text-center shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer group hover:-translate-y-2 overflow-hidden"
-              onClick={() => showScreen(card.id)}
+              className="relative h-28 sm:h-32 overflow-visible"
             >
-              <div className="transition-transform duration-300 group-hover:scale-110">
-                  <div className="mb-3 flex justify-center items-center h-14">
-                    <Image src={card.icon} alt={card.title} width={56} height={56} className="object-contain" />
+              <button
+                onClick={() => showScreen(card.id)}
+                className="
+                  group/card
+                  absolute inset-0
+                  bg-white
+                  rounded-2xl
+                  shadow-md
+                  transition-all duration-300 ease-out
+                  transform-gpu
+                  hover:scale-110 hover:shadow-2xl
+                  focus:ring-2 focus:ring-purple-400
+                "
+              >
+                <div className="flex flex-col items-center justify-center h-full px-3">
+                  {/* Icon */}
+                  <div className="flex items-center justify-center h-12 transition-transform duration-300 group-hover/card:scale-125">
+                    <Image
+                      src={card.icon}
+                      alt={card.title}
+                      width={44}
+                      height={44}
+                      className="object-contain"
+                    />
                   </div>
-                  <h3 className="font-semibold text-lg text-gray-900 truncate">{card.title}</h3>
-              </div>
-              <p className="text-gray-500 text-sm h-0 opacity-0 group-hover:h-auto group-hover:mt-2 group-hover:opacity-100 transition-all duration-300">
-                  {card.detail}
-              </p>
+
+                  {/* Title */}
+                  <h3 className="mt-2 text-[15px] font-semibold text-gray-900 text-center transition-all duration-300 group-hover/card:text-[16px]">
+                    {card.title}
+                  </h3>
+
+                  {/* Detail (fade in) */}
+                  <p
+                    className="
+                      text-[12px] text-gray-500 text-center opacity-0 translate-y-1
+                      transition-all duration-300 ease-out
+                      group-hover/card:opacity-100 group-hover/card:translate-y-0
+                    "
+                  >
+                    {card.detail}
+                  </p>
+                </div>
+              </button>
             </div>
           ))}
         </div>
