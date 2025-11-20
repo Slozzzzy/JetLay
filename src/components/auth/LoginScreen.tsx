@@ -15,6 +15,8 @@ const LoginScreen: React.FC<LoginProps> = ({ showScreen, showAlert, handleGoogle
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const router = useRouter();
+    const [showPassword, setShowPassword] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleLogin = async () => {
       if (!email || !password) {
@@ -56,6 +58,10 @@ const LoginScreen: React.FC<LoginProps> = ({ showScreen, showAlert, handleGoogle
         console.error('Login error:', err);
         showAlert('An unexpected error occurred. Please try again.', 'error');
       }
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') handleLogin();
   };
 
   return (
