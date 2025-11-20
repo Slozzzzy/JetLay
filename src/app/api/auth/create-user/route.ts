@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { PASSWORD_REGEX } from "../_utils/password";
 
-// Paaword Policy
-const PASSWORD_REGEX =
-  /^(?=.{8,}$)(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&*]).*$/;
+// Supabase public client (for normal auth flows: signUp -> sends email)
+const supabasePublic = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! // <-- add this env if not already
+);
 
 // Supabase admin client (server-only)
 const supabaseAdmin = createClient(
@@ -16,7 +19,18 @@ export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
-    const { fullName, email, password } = await req.json();
+    // Accept either `fullName` (single field) or `firstName`/`lastName` (client may send these)
+    const body = await req.json();
+    const { fullName, firstName, lastName, email, password } = body as {
+      fullName?: string;
+      firstName?: string;
+      lastName?: string;
+      email?: string;
+      password?: string;
+    };
+
+    // Resolve a combined full name from whichever shape the client provided
+    const resolvedFullName = fullName ?? [firstName, lastName].filter(Boolean).join(' ') ?? '';
 
     // Input validation
     if (!fullName || !email || !password) {
@@ -33,20 +47,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Split full name into first/last
-    const [first_name, ...rest] = fullName.trim().split(" ");
-    const last_name = rest.join(" ");
+    // Split the resolved full name into first/last (fall back to nulls)
+    const nameParts = resolvedFullName.trim().split(/\s+/).filter(Boolean);
+    const first_name = nameParts.length > 0 ? nameParts[0] : null;
+    const last_name = nameParts.length > 1 ? nameParts.slice(1).join(' ') : null;
 
     // Create user with Supabase Admin API
-    const { data, error } = await supabaseAdmin.auth.admin.createUser({
-      email,
+    const { data, error } = await supabasePublic.auth.signUp({
+      email: email.toLowerCase(),
       password,
-      email_confirm: true,
-      user_metadata: {
-        first_name,
-        last_name,
-        full_name: fullName,
-        avatar_url: "",
+      options: {
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/login`,
+        data: {
+          first_name,
+          last_name,
+          full_name: resolvedFullName,
+          avatar_url: "",
+        },
       },
     });
 
@@ -63,6 +80,7 @@ export async function POST(req: NextRequest) {
         id: data.user?.id,
         first_name: first_name ?? null,
         last_name: last_name ?? null,
+        full_name: resolvedFullName ?? null,
         avatar_url: '',
         phone: null,
         birth_date: null,

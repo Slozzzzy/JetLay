@@ -67,8 +67,58 @@ const App = () => {
           .select('*')
           .eq('id', userId)
           .single();
-        if (!error) setProfile(profileData ?? null);
-        else setProfile(null);
+
+        if (profileData) {
+          setProfile(profileData);
+          return;
+        }
+
+        // No profile found — attempt to create one for OAuth users using metadata
+        // Fetch current user metadata to populate profile fields
+        const userRes = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
+        const user = userRes?.data?.user ?? null;
+
+        // Safely extract user metadata without `any` so TypeScript stays strict for Vercel builds
+        type UserMetaHolder = { user_metadata?: unknown };
+        const maybeMeta = (user as unknown as UserMetaHolder)?.user_metadata;
+        const meta: Record<string, unknown> = typeof maybeMeta === 'object' && maybeMeta !== null ? (maybeMeta as Record<string, unknown>) : {};
+
+        const getString = (key: string) => {
+          const val = meta[key];
+          return typeof val === 'string' ? val : null;
+        };
+
+        const full_name = getString('full_name') ?? getString('fullName') ?? getString('name') ?? null;
+        const first_name = getString('first_name') ?? getString('firstName') ?? (full_name ? String(full_name).trim().split(/\s+/)[0] : null);
+        const last_name = getString('last_name') ?? getString('lastName') ?? (full_name ? String(full_name).trim().split(/\s+/).slice(1).join(' ') : null);
+        const avatar_url = getString('avatar_url') ?? getString('avatar') ?? getString('picture') ?? null;
+
+        try {
+          const { data: inserted, error: insertErr } = await supabase
+            .from('profiles')
+            .insert({
+              id: userId,
+              first_name: first_name ?? null,
+              last_name: last_name ?? null,
+              full_name: full_name ?? null,
+              avatar_url: avatar_url ?? '',
+              phone: null,
+              birth_date: null,
+            })
+            .select()
+            .maybeSingle();
+
+          if (insertErr) {
+            console.warn('Failed to create profile for OAuth user:', insertErr);
+            setProfile(null);
+          } else {
+            setProfile(inserted ?? null);
+          }
+        } catch (ie) {
+          console.warn('Profile insert exception:', ie);
+          setProfile(null);
+        }
+        return;
       } catch {
         setProfile(null);
       }
@@ -184,7 +234,7 @@ const App = () => {
     if (currentScreen === 'loading') return null;
         switch (currentScreen) {
           case 'welcomeChoice': return <WelcomeChoiceScreen showScreen={showScreen} />;
-          case 'createAccount': return <CreateAccountScreen />;
+          case 'createAccount': return <CreateAccountScreen {...screenProps} handleGoogleLogin={handleGoogleLogin} />;
           case 'welcomeBack': return <LoginScreen {...screenProps} handleGoogleLogin={handleGoogleLogin} />;
           case 'forgotPassword': return <ForgotPasswordScreen {...screenProps} />;
           case 'verifyEmail': return <VerifyEmailScreen {...screenProps} />;
