@@ -5,7 +5,7 @@ import { PASSWORD_REGEX } from "../_utils/password";
 // Supabase public client (for normal auth flows: signUp -> sends email)
 const supabasePublic = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! // <-- add this env if not already
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
 // Supabase admin client (server-only)
