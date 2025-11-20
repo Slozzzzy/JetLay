@@ -23,6 +23,8 @@ import ReviewsScreen from '@/components/screens/ReviewsScreen';
 import AddReviewScreen from '@/components/screens/AddReviewScreen';
 import CalendarScreen from '@/components/screens/CalendarScreen';
 import UserProfileScreen from '@/components/screens/UserProfileScreen';
+import ChangePasswordScreen from '@/components/screens/ChangePasswordScreen';
+
 
 const App = () => {
   const [showSplash, setShowSplash] = useState(true);
@@ -196,6 +198,7 @@ const App = () => {
           case 'addReview': return <AddReviewScreen {...screenProps} />;
           case 'calendar': return <CalendarScreen {...screenProps} />;
           case 'user': return <UserProfileScreen {...screenProps} handleSignOut={handleSignOut} />;
+          case 'changePassword': return <ChangePasswordScreen {...screenProps} />;
           default: return <WelcomeChoiceScreen showScreen={showScreen} />;
         }
       };
