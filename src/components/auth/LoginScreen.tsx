@@ -1,39 +1,61 @@
 // src/components/auth/LoginScreen.tsx
 import React, { useState } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import Header from '@/components/core/Header';
-import { supabase } from '@/lib/supabaseClient';
 import { ScreenProps } from '@/types';
+import DashboardScreen from '@/components/screens/DashboardScreen';
+import { stringify } from 'querystring';
 
 interface LoginProps extends Omit<ScreenProps, 'profile' | 'setProfile'> {
   handleGoogleLogin: () => void;
 }
 
 const LoginScreen: React.FC<LoginProps> = ({ showScreen, showAlert, handleGoogleLogin }) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const router = useRouter();
 
-  const handleLogin = async () => {
-    if (!email || !password) {
-      showAlert('Please enter email and password.', 'error');
-      return;
-    }
-    setIsLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setIsLoading(false);
+    const handleLogin = async () => {
+      if (!email || !password) {
+        showAlert('Please enter both email and password.', 'error');
+        return;
+      }
 
-    if (error) {
-      showAlert(error.message, 'error');
-    } else {
-      // onAuthStateChange in page.tsx will navigate
-      showAlert('Login successful!', 'success');
-    }
-  };
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
 
-  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') handleLogin();
+        // Safely parse JSON — some responses may have an empty body
+        let result: unknown = {};
+        try {
+          // If body is empty, this will throw; we catch and keep result as {}
+          result = await response.json();
+        } catch (parseErr) {
+          // ignore parse errors (empty response)
+          result = {};
+        }
+
+        if (!response.ok) {
+          let serverError: string | undefined;
+          if (typeof result === 'object' && result !== null && 'error' in result) {
+            const e = (result as { error?: unknown }).error;
+            if (typeof e === 'string') serverError = e;
+          }
+
+          showAlert(serverError ?? 'Login failed.', 'error');
+          return;
+        }
+
+        showAlert('Login successful!', 'success');
+        showScreen('dashboard');
+      } catch (err) {
+        console.error('Login error:', err);
+        showAlert('An unexpected error occurred. Please try again.', 'error');
+      }
   };
 
   return (

@@ -136,6 +136,7 @@ const CreateAccountScreen: React.FC<CreateAccountProps> = ({ showScreen, showAle
             <input
               type={showPassword ? 'text' : 'password'} // Set type dynamically
               placeholder="Password"
+              autoComplete="new-password"
               className="w-full p-3 border border-gray-300 rounded-lg pr-10" // Add padding to right for icon
               value={password}
               onChange={handleInputChange(setPassword)}

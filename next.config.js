@@ -3,7 +3,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Set the output mode to 'export' for static HTML generation
-  output: 'export',
+  // output: 'export',
 
   // Optional: Disable image optimization, which isn't fully supported with static export
   images: {
