@@ -359,25 +359,7 @@ const DashboardScreen: React.FC<ScreenProps> = ({
   ];
 
   // Ad popup state (unchanged)
-  const [adOpen, setAdOpen] = useState(false);
-  const openAd = () => setAdOpen(true);
-  const closeAd = () => {
-    const today = new Date().toISOString().slice(0, 10);
-    localStorage.setItem('jetlay_ad_dismissed_date', today);
-    setAdOpen(false);
-  };
-  useEffect(() => {
-    const last = localStorage.getItem('jetlay_ad_dismissed_date');
-    const today = new Date().toISOString().slice(0, 10);
-    if (last !== today) {
-      const t = setTimeout(() => setAdOpen(true), 1200);
-      return () => clearTimeout(t);
-    }
-  }, []);
-  const handleAdCTA = () => {
-    closeAd();
-    alert('🎉 Ultimate JetLay trial activated (demo)');
-  };
+  
 
   return (
     // Apply 'dark' class based on state. Tailwind needs this to activate dark: styles.
@@ -418,13 +400,7 @@ const DashboardScreen: React.FC<ScreenProps> = ({
             {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </button>
           
-          <button
-            onClick={openAd}
-            className="hidden rounded-xl border border-purple-200 bg-white/80 px-3 py-2 text-xs font-medium text-purple-700 shadow hover:bg-purple-50 md:inline-block dark:border-purple-900 dark:bg-gray-800/80 dark:text-purple-400 dark:hover:bg-purple-900"
-            title="Show Ad (demo)"
-          >
-            Show Ad
-          </button>
+          
           <select
             value={theme}
             onChange={(e) => {
@@ -602,7 +578,7 @@ const DashboardScreen: React.FC<ScreenProps> = ({
         </section>
       </div>
 
-      <AdModal open={adOpen} onClose={closeAd} onCTA={handleAdCTA} />
+      
     </div>
   );
 };
