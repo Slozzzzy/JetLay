@@ -4,40 +4,52 @@ import { supabase } from '@/lib/supabaseClient';
 import { ScreenProps } from '@/types';
 import { Eye, EyeOff } from 'lucide-react'; 
 
-const ChangePasswordScreen: React.FC<ScreenProps> = ({ showScreen, showAlert }) => {
-  const [email, setEmail] = useState<string>('');
-  const [currentPassword, setCurrentPassword] = useState<string>('');
-  const [newPassword, setNewPassword] = useState<string>('');
-  const [confirmPassword, setConfirmPassword] = useState<string>('');
+type ChangePasswordScreenProps = ScreenProps & {
+  goBack: () => void; // dynamic back function
+};
+
+const ChangePasswordScreen: React.FC<ChangePasswordScreenProps> = ({
+  showAlert,
+  goBack,
+}) => {
+  const [email, setEmail] = useState<string>("");
+  const [currentPassword, setCurrentPassword] = useState<string>("");
+  const [newPassword, setNewPassword] = useState<string>("");
+  const [confirmPassword, setConfirmPassword] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
 
   // 👁️ Visibility toggles
-  const [showCurrentPassword, setShowCurrentPassword] = useState<boolean>(false);
+  const [showCurrentPassword, setShowCurrentPassword] =
+    useState<boolean>(false);
   const [showNewPassword, setShowNewPassword] = useState<boolean>(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
+  const [showConfirmPassword, setShowConfirmPassword] =
+    useState<boolean>(false);
 
   useEffect(() => {
     (async () => {
       const { data } = await supabase.auth.getUser();
-      setEmail(data.user?.email || '');
+      setEmail(data.user?.email || "");
     })();
   }, []);
 
   const validate = () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
-      showAlert('Please fill in all fields.', 'error');
+      showAlert("Please fill in all fields.", "error");
       return false;
     }
     if (newPassword.length < 8) {
-      showAlert('New password must be at least 8 characters.', 'error');
+      showAlert("New password must be at least 8 characters.", "error");
       return false;
     }
     if (newPassword !== confirmPassword) {
-      showAlert('New password and confirmation do not match.', 'error');
+      showAlert("New password and confirmation do not match.", "error");
       return false;
     }
     if (newPassword === currentPassword) {
-      showAlert('New password must be different from current password.', 'error');
+      showAlert(
+        "New password must be different from current password.",
+        "error"
+      );
       return false;
     }
     return true;
@@ -53,28 +65,34 @@ const ChangePasswordScreen: React.FC<ScreenProps> = ({ showScreen, showAlert }) 
         password: currentPassword,
       });
       if (signInError) {
-        showAlert('Current password is incorrect.', 'error');
+        showAlert("Current password is incorrect.", "error");
         setLoading(false);
         return;
       }
 
-      const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
       if (updateError) {
-        showAlert(updateError.message || 'Failed to update password.', 'error');
+        showAlert(updateError.message || "Failed to update password.", "error");
         setLoading(false);
         return;
       }
 
-      showAlert('Password updated successfully!', 'success');
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
+      showAlert("Password updated successfully!", "success");
+
+      // reset fields
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
       setShowCurrentPassword(false);
       setShowNewPassword(false);
       setShowConfirmPassword(false);
-      showScreen('user');
+
+      // ✅ go back dynamically
+      goBack();
     } catch (e) {
-      showAlert('Something went wrong while updating the password.', 'error');
+      showAlert("Something went wrong while updating the password.", "error");
     } finally {
       setLoading(false);
     }
@@ -93,7 +111,7 @@ const ChangePasswordScreen: React.FC<ScreenProps> = ({ showScreen, showAlert }) 
       <label className="block text-sm text-gray-600 mb-2">{label}</label>
       <div className="relative">
         <input
-          type={isVisible ? 'text' : 'password'}
+          type={isVisible ? "text" : "password"}
           placeholder={placeholder}
           value={value}
           onChange={onChange}
@@ -114,10 +132,11 @@ const ChangePasswordScreen: React.FC<ScreenProps> = ({ showScreen, showAlert }) 
   return (
     <div className="flex flex-col min-h-screen bg-purple-50 p-6 items-center">
       <div className="w-full max-w-md">
+        {/* Header with Back button */}
         <div className="relative mb-6 text-center">
           <button
-            className="cursor-pointer absolute top-1 left-0 text-gray-600 font-semibold flex items-center"
-            onClick={() => showScreen('user')}
+            className="absolute top-1 left-0 text-gray-600 font-semibold flex items-center"
+            onClick={goBack} // dynamic back
           >
             &larr; Back
           </button>
@@ -137,43 +156,40 @@ const ChangePasswordScreen: React.FC<ScreenProps> = ({ showScreen, showAlert }) 
 
         {/* Password fields */}
         {renderPasswordField(
-          'Current Password',
+          "Current Password",
           currentPassword,
           (e) => setCurrentPassword(e.target.value),
-          'Enter current password',
+          "Enter current password",
           showCurrentPassword,
           () => setShowCurrentPassword(!showCurrentPassword)
         )}
 
         {renderPasswordField(
-          'New Password',
+          "New Password",
           newPassword,
           (e) => setNewPassword(e.target.value),
-          'At least 8 characters',
+          "At least 8 characters",
           showNewPassword,
           () => setShowNewPassword(!showNewPassword)
         )}
 
-        <div className="mb-8">
-          {renderPasswordField(
-            'Confirm New Password',
-            confirmPassword,
-            (e) => setConfirmPassword(e.target.value),
-            'Re-enter new password',
-            showConfirmPassword,
-            () => setShowConfirmPassword(!showConfirmPassword)
-          )}
-        </div>
+        {renderPasswordField(
+          "Confirm New Password",
+          confirmPassword,
+          (e) => setConfirmPassword(e.target.value),
+          "Re-enter new password",
+          showConfirmPassword,
+          () => setShowConfirmPassword(!showConfirmPassword)
+        )}
 
         <button
           className={`cursor-pointer w-full py-4 text-white font-bold text-lg rounded-full shadow-lg transition duration-150 ease-in-out ${
             loading ? 'opacity-70 cursor-not-allowed' : 'hover:shadow-xl active:translate-y-0.5'
           }`}
-          style={{ background: 'linear-gradient(90deg, #a78bfa, #f472b6)' }}
+          style={{ background: "linear-gradient(90deg, #a78bfa, #f472b6)" }}
           onClick={handleChangePassword}
-          disabled={loading}
-        >
-          {loading ? 'Updating…' : 'Update Password'}
+          disabled={loading}>
+          {loading ? "Updating…" : "Update Password"}
         </button>
       </div>
     </div>

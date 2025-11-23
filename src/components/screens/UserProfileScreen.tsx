@@ -1,24 +1,29 @@
 // src/components/screens/UserProfileScreen.tsx
-import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
-import { supabase } from '@/lib/supabaseClient';
-import { ScreenProps } from '@/types';
+import React, { useState, useEffect } from "react";
+import Image from "next/image";
+import { supabase } from "@/lib/supabaseClient";
+import { ScreenProps } from "@/types";
 
 interface UserProfileProps extends ScreenProps {
   handleSignOut: () => void;
+  goBack: () => void; // <-- added
 }
 
-const UserProfileScreen: React.FC<UserProfileProps> = ({ showScreen, showAlert, profile, setProfile, handleSignOut }) => {
-  // Local state to manage form changes before saving
+const UserProfileScreen: React.FC<UserProfileProps> = ({
+  showScreen,
+  showAlert,
+  profile,
+  setProfile,
+  handleSignOut,
+  goBack,
+}) => {
   const [localProfile, setLocalProfile] = useState(profile);
 
   useEffect(() => {
     setLocalProfile(profile);
   }, [profile]);
-  
-  if (!localProfile) {
-    return <div>Loading profile...</div>; // Or a spinner
-  }
+
+  if (!localProfile) return <div>Loading profile...</div>;
 
   const handleUpdateProfile = async () => {
     if (!localProfile) return;
@@ -36,35 +41,41 @@ const UserProfileScreen: React.FC<UserProfileProps> = ({ showScreen, showAlert, 
     if (error) {
       showAlert("Failed to update profile!", "error");
     } else {
-      setProfile(localProfile); // Update the main app state
+      setProfile(localProfile);
       showAlert("Profile Saved!", "success");
     }
   };
-  
+
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !profile?.id) return;
 
     try {
-      const fileExt = file.name.split('.').pop();
+      const fileExt = file.name.split(".").pop();
       const filePath = `avatars/${profile.id}.${fileExt}`;
 
-      const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file, { upsert: true });
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(filePath, file, { upsert: true });
       if (uploadError) throw uploadError;
 
-      const { data: publicURLData } = supabase.storage.from('avatars').getPublicUrl(filePath);
+      const { data: publicURLData } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(filePath);
       const publicURL = publicURLData.publicUrl;
 
-      const { error: updateError } = await supabase.from('profiles').update({ avatar_url: publicURL }).eq('id', profile.id);
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ avatar_url: publicURL })
+        .eq("id", profile.id);
       if (updateError) throw updateError;
-      
-      // Update both local and main state
+
       const updatedProfile = { ...localProfile, avatar_url: publicURL };
       setLocalProfile(updatedProfile);
       setProfile(updatedProfile);
-      showAlert('Profile picture updated!', "success");
-    } catch (_error){
-      showAlert('Failed to upload image.', "error");
+      showAlert("Profile picture updated!", "success");
+    } catch (_error) {
+      showAlert("Failed to upload image.", "error");
     }
   };
 
@@ -78,6 +89,7 @@ const UserProfileScreen: React.FC<UserProfileProps> = ({ showScreen, showAlert, 
           >
             &larr; Back
           </button>
+
           <h1 className="text-3xl font-bold text-gray-900">User Profile</h1>
         </div>
 
@@ -91,36 +103,46 @@ const UserProfileScreen: React.FC<UserProfileProps> = ({ showScreen, showAlert, 
               className="w-32 h-32 rounded-full object-cover shadow-lg"
             />
           ) : (
-            <div className="w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center text-gray-400 text-6xl">👤</div>
+            <div className="w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center text-gray-400 text-6xl">
+              👤
+            </div>
           )}
         </div>
 
         <input
           type="text"
           placeholder="First Name"
-          value={localProfile.first_name || ''}
-          onChange={(e) => setLocalProfile({ ...localProfile, first_name: e.target.value })}
+          value={localProfile.first_name || ""}
+          onChange={(e) =>
+            setLocalProfile({ ...localProfile, first_name: e.target.value })
+          }
           className="w-full p-4 mb-4 border border-gray-300 rounded-lg"
         />
         <input
           type="text"
           placeholder="Last Name"
-          value={localProfile.last_name || ''}
-          onChange={(e) => setLocalProfile({ ...localProfile, last_name: e.target.value })}
+          value={localProfile.last_name || ""}
+          onChange={(e) =>
+            setLocalProfile({ ...localProfile, last_name: e.target.value })
+          }
           className="w-full p-4 mb-4 border border-gray-300 rounded-lg"
         />
         <input
           type="date"
           placeholder="Birth Date"
-          value={localProfile.birth_date || ''}
-          onChange={(e) => setLocalProfile({ ...localProfile, birth_date: e.target.value })}
+          value={localProfile.birth_date || ""}
+          onChange={(e) =>
+            setLocalProfile({ ...localProfile, birth_date: e.target.value })
+          }
           className="w-full p-4 mb-6 border border-gray-300 rounded-lg"
         />
         <input
           type="tel"
           placeholder="Phone Number"
-          value={localProfile.phone || ''}
-          onChange={(e) => setLocalProfile({ ...localProfile, phone: e.target.value })}
+          value={localProfile.phone || ""}
+          onChange={(e) =>
+            setLocalProfile({ ...localProfile, phone: e.target.value })
+          }
           className="w-full p-4 mb-6 border border-gray-300 rounded-lg"
         />
 

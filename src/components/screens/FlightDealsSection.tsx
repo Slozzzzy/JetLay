@@ -127,7 +127,7 @@ const FlightDealsSection: React.FC<{
       <div>
         <h3 className="mb-1 text-2xl font-bold text-gray-900">Round-trip flights to Tsushima</h3>
         <p className="mb-4 text-sm text-gray-600">
-          Perfect 3–7 day plans for an affordable Tsushima experience.
+          Perfect 5–7 day plans for an affordable Tsushima experience.
         </p>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
