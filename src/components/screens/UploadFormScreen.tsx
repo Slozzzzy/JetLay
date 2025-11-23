@@ -182,9 +182,8 @@ const UploadFormScreen: React.FC<UploadFormProps> = ({
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="cursor-pointer w-full rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 transition-all hover:shadow-lg disabled:opacity-60"
-          >
-            {isSaving ? 'Saving…' : 'Save'}
+            className="cursor-pointer w-full rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 transition-all hover:shadow-lg disabled:opacity-60">
+            {isSaving ? "Saving…" : "Save"}
           </button>
         </div>
       </div>

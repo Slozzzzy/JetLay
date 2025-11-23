@@ -1,6 +1,6 @@
 // src/components/screens/SplashScreen.tsx
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import Image from 'next/image';
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import Image from "next/image";
 
 type Props = {
   onFinish?: () => void;
@@ -20,7 +20,7 @@ const SplashScreen: React.FC<Props> = ({ onFinish, sessionReady }) => {
   const notifyParent = useCallback(() => {
     if (finishedCalled.current) return;
     finishedCalled.current = true;
-    if (typeof onFinish === 'function') onFinish();
+    if (typeof onFinish === "function") onFinish();
   }, [onFinish]);
 
   const startExit = useCallback(() => {
@@ -67,8 +67,14 @@ const SplashScreen: React.FC<Props> = ({ onFinish, sessionReady }) => {
     <>
       <style jsx global>{`
         @keyframes fadeInScaleUp {
-          from { opacity: 0; transform: scale(0.9); }
-          to { opacity: 1; transform: scale(1); }
+          from {
+            opacity: 0;
+            transform: scale(0.9);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
         }
 
         .splash-overlay {
@@ -78,8 +84,9 @@ const SplashScreen: React.FC<Props> = ({ onFinish, sessionReady }) => {
           align-items: center;
           justify-content: center;
           z-index: 9999;
-          background: var(--splash-bg, rgba(243,232,255,1));
-          transition: opacity ${TRANSITION_MS}ms ease, visibility ${TRANSITION_MS}ms ease;
+          background: var(--splash-bg, rgba(243, 232, 255, 1));
+          transition: opacity ${TRANSITION_MS}ms ease,
+            visibility ${TRANSITION_MS}ms ease;
           opacity: 1;
           visibility: visible;
           pointer-events: auto;
@@ -98,12 +105,11 @@ const SplashScreen: React.FC<Props> = ({ onFinish, sessionReady }) => {
       `}</style>
 
       <div
-        className={`splash-overlay ${exiting ? 'exiting' : ''}`}
+        className={`splash-overlay ${exiting ? "exiting" : ""}`}
         role="dialog"
         aria-modal="true"
-        aria-hidden={exiting ? 'true' : 'false'}
-        onClick={() => startExit()}
-      >
+        aria-hidden={exiting ? "true" : "false"}
+        onClick={() => startExit()}>
         <div className="splash-inner" aria-hidden="false">
           <Image
             src="/raw-removebg-preview.png"

@@ -1,5 +1,5 @@
 // src/components/core/CustomAlert.tsx
-import React from 'react';
+import React from "react";
 
 type CustomAlertProps = {
   message: string;
@@ -15,8 +15,7 @@ const CustomAlert: React.FC<CustomAlertProps> = ({ message, onClose }) => {
         <p className="mb-4 text-lg font-semibold text-gray-900">{message}</p>
         <button
           onClick={onClose}
-          className="px-6 py-2 bg-purple-700 text-white font-semibold rounded-lg hover:bg-purple-800 transition duration-150 shadow-md"
-        >
+          className="px-6 py-2 bg-purple-700 text-white font-semibold rounded-lg hover:bg-purple-800 transition duration-150 shadow-md">
           OK
         </button>
       </div>

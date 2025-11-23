@@ -199,8 +199,8 @@ const CalendarScreen: React.FC<CalendarScreenProps> = ({
             onChange={(e) => setCurrentNote(e.target.value)}
             disabled={!selectedDate}
           />
-          <button 
-            className="cursor-pointer w-full py-3 bg-yellow-400 text-gray-900 font-bold rounded-xl disabled:bg-gray-300" 
+          <button
+            className="cursor-pointer w-full py-3 bg-yellow-400 text-gray-900 font-bold rounded-xl disabled:bg-gray-300"
             onClick={handleSaveNote}
             disabled={!selectedDate}>
             Save Note

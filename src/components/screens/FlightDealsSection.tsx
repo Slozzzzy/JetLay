@@ -1,27 +1,26 @@
 // src/components/sections/FlightDealsSection.tsx
-import React from 'react';
-import { Plane, ArrowRight, TrendingDown } from 'lucide-react';
+import React from "react";
+import { Plane, ArrowRight, TrendingDown } from "lucide-react";
 
 type Deal = {
   from: string;
   to: string;
   airline: string;
-  tripType: 'One way' | 'Round trip';
-  cabin: 'Economy' | 'Business' | 'Premium';
-  dateText: string;           // e.g. "Fri, Nov 21"
-  priceTHB: number;           // e.g. 9258
-  discountPct?: number;       // e.g. 33
+  tripType: "One way" | "Round trip";
+  cabin: "Economy" | "Business" | "Premium";
+  dateText: string; // e.g. "Fri, Nov 21"
+  priceTHB: number; // e.g. 9258
+  discountPct?: number; // e.g. 33
 };
 
 type RoundTrip = {
-  days: number;               // e.g. 5,7,8
-  rangeText: string;          // "Thu, Dec 11– Mon, Dec 15"
-  fromTo: string;             // "Hong Kong  ⇄  Tsushima"
+  days: number; // e.g. 5,7,8
+  rangeText: string; // "Thu, Dec 11– Mon, Dec 15"
+  fromTo: string; // "Hong Kong  ⇄  Tsushima"
   priceTHB: number;
 };
 
-const formatTHB = (n: number) =>
-  `฿ ${n.toLocaleString('en-US')}`;
+const formatTHB = (n: number) => `฿ ${n.toLocaleString("en-US")}`;
 
 const LatestDealCard: React.FC<{ deal: Deal }> = ({ deal }) => {
   return (
@@ -52,14 +51,21 @@ const LatestDealCard: React.FC<{ deal: Deal }> = ({ deal }) => {
         </div>
         <div className="text-right">
           <div className="text-xs text-gray-500">{deal.dateText}</div>
-          <div className="text-xl font-bold text-indigo-600">{formatTHB(deal.priceTHB)}</div>
+          <div className="text-xl font-bold text-indigo-600">
+            {formatTHB(deal.priceTHB)}
+          </div>
         </div>
       </div>
 
       {/* mock mini chart */}
       <div className="mt-3 h-10 w-full">
         <svg viewBox="0 0 100 30" className="h-full w-full text-indigo-500">
-          <path d="M0,18 C20,22 35,26 55,20 C70,15 85,12 100,20" fill="none" stroke="currentColor" strokeWidth="2" />
+          <path
+            d="M0,18 C20,22 35,26 55,20 C70,15 85,12 100,20"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          />
           <circle cx="100" cy="20" r="2.5" fill="currentColor" />
         </svg>
       </div>
@@ -67,23 +73,31 @@ const LatestDealCard: React.FC<{ deal: Deal }> = ({ deal }) => {
   );
 };
 
-const RoundTripCard: React.FC<{ item: RoundTrip; onSearch?: () => void }> = ({ item, onSearch }) => {
+const RoundTripCard: React.FC<{ item: RoundTrip; onSearch?: () => void }> = ({
+  item,
+  onSearch,
+}) => {
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
       <div className="mb-2 flex items-baseline gap-2">
-        <div className="text-3xl font-extrabold text-indigo-600">{item.days}</div>
+        <div className="text-3xl font-extrabold text-indigo-600">
+          {item.days}
+        </div>
         <div className="text-sm font-semibold text-indigo-400">Day Trip</div>
       </div>
 
-      <div className="mb-1 text-[15px] font-semibold text-gray-900">{item.rangeText}</div>
+      <div className="mb-1 text-[15px] font-semibold text-gray-900">
+        {item.rangeText}
+      </div>
       <div className="mb-3 text-sm text-gray-500">{item.fromTo}</div>
 
       <div className="flex items-center justify-between">
-        <div className="text-[15px] font-bold text-indigo-600">{formatTHB(item.priceTHB)}</div>
+        <div className="text-[15px] font-bold text-indigo-600">
+          {formatTHB(item.priceTHB)}
+        </div>
         <button
           onClick={onSearch}
-          className="cursor-pointer rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-indigo-700 active:translate-y-px"
-        >
+          className="cursor-pointer rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-indigo-700 active:translate-y-px">
           Search
         </button>
       </div>
@@ -101,9 +115,12 @@ const FlightDealsSection: React.FC<{
     <section className="space-y-6">
       {/* Latest */}
       <div>
-        <h3 className="mb-1 text-2xl font-bold text-gray-900">Latest Flight Deals to Tsushima</h3>
+        <h3 className="mb-1 text-2xl font-bold text-gray-900">
+          Latest Flight Deals to Tsushima
+        </h3>
         <p className="mb-4 text-sm text-gray-600">
-          These are the best offers we found in the next 60 days. Don’t miss out!
+          These are the best offers we found in the next 60 days. Don’t miss
+          out!
         </p>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <LatestDealCard deal={latestDeal} />
@@ -114,7 +131,8 @@ const FlightDealsSection: React.FC<{
               Tip
             </div>
             <p className="text-sm">
-              Prices often drop mid-week. Set a reminder and we’ll nudge you when it’s cheaper.
+              Prices often drop mid-week. Set a reminder and we’ll nudge you
+              when it’s cheaper.
             </p>
             <button className="cursor-pointer mt-3 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700 active:translate-y-px">
               Create alert
@@ -125,7 +143,9 @@ const FlightDealsSection: React.FC<{
 
       {/* Round trips */}
       <div>
-        <h3 className="mb-1 text-2xl font-bold text-gray-900">Round-trip flights to Tsushima</h3>
+        <h3 className="mb-1 text-2xl font-bold text-gray-900">
+          Round-trip flights to Tsushima
+        </h3>
         <p className="mb-4 text-sm text-gray-600">
           Perfect 5–7 day plans for an affordable Tsushima experience.
         </p>

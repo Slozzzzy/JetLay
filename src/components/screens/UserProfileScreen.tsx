@@ -85,8 +85,7 @@ const UserProfileScreen: React.FC<UserProfileProps> = ({
         <div className="relative mb-6 text-center">
           <button
             className="cursor-pointer absolute top-1 left-0 text-gray-600 font-semibold flex items-center"
-            onClick={() => showScreen('dashboard')}
-          >
+            onClick={() => showScreen("dashboard")}>
             &larr; Back
           </button>
 
@@ -150,8 +149,7 @@ const UserProfileScreen: React.FC<UserProfileProps> = ({
           <label className="text-gray-500">Profile Picture</label>
           <label
             htmlFor="profilePicture"
-            className="cursor-pointer px-4 py-2 bg-gray-200 text-gray-900 font-semibold rounded-lg hover:bg-gray-300"
-          >
+            className="cursor-pointer px-4 py-2 bg-gray-200 text-gray-900 font-semibold rounded-lg hover:bg-gray-300">
             Choose File
           </label>
           <input
@@ -165,24 +163,21 @@ const UserProfileScreen: React.FC<UserProfileProps> = ({
 
         <button
           className="cursor-pointer w-full py-4 text-white font-bold text-lg rounded-full shadow-lg"
-          style={{ background: 'linear-gradient(90deg, #a78bfa, #f472b6)' }}
-          onClick={handleUpdateProfile}
-        >
+          style={{ background: "linear-gradient(90deg, #a78bfa, #f472b6)" }}
+          onClick={handleUpdateProfile}>
           Save Changes
         </button>
 
         {/* NEW: Change Password */}
         <button
           className="cursor-pointer w-full py-3 mt-4 bg-yellow-500 text-white font-bold rounded-xl shadow-md hover:bg-yellow-600 transition-all"
-          onClick={() => showScreen('changePassword')}
-        >
+          onClick={() => showScreen("changePassword")}>
           Change Password
         </button>
 
         <button
           className="cursor-pointer w-full py-3 mt-4 bg-red-600 text-white font-bold rounded-xl shadow-md hover:bg-red-700"
-          onClick={handleSignOut}
-        >
+          onClick={handleSignOut}>
           Log Out
         </button>
       </div>
