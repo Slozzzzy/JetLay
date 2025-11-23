@@ -1,4 +1,3 @@
-// src/components/screens/DashboardScreen.tsx
 import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Header from '@/components/core/Header';
@@ -454,7 +453,7 @@ const DashboardScreen: React.FC<ScreenProps> = ({
           </div>
         </div>
         
-        {/* Quick Actions */}
+        {/* Quick Actions (FIXED: Removed max-w-5xl mx-auto to use full container width) */}
         <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
             { label: 'New Upload', on: () => showScreen('uploadForm') },
@@ -472,29 +471,36 @@ const DashboardScreen: React.FC<ScreenProps> = ({
           ))}
         </div>
 
-        {/* Main cards */}
-        <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+        {/* Main cards (FIXED: Removed max-w-5xl mx-auto to use full container width) */}
+        <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
           {[
             { id: 'visa', icon: '/visa.png', title: 'Visa Requirement', detail: 'Check country entry rules.' },
             { id: 'upload', icon: '/document.png', title: 'Document Upload', detail: 'Store and track your files.' },
             { id: 'calendar', icon: '/calendar.png', title: 'Calendar', detail: 'Plan your travel deadlines.' },
             { id: 'reviews', icon: '/review.png', title: 'Traveler Reviews', detail: 'Share and read experiences.' },
           ].map((card) => (
-            <div key={card.id} className="relative h-28 overflow-visible sm:h-32">
+            <div key={card.id} className="relative h-36 overflow-visible">
               <button
                 onClick={() => showScreen(card.id)}
-                className="group absolute inset-0 transform-gpu rounded-2xl border border-white/70 dark:border-gray-700 bg-white/90 dark:bg-gray-800/90 p-0 shadow-md transition-all duration-300 ease-out hover:scale-105 hover:shadow-2xl focus:ring-2 focus:ring-purple-400 dark:shadow-lg"
+                // Adjusted padding to reduce vertical size and center content better
+                className="group absolute inset-0 transform-gpu rounded-2xl border border-white/70 dark:border-gray-700 bg-white/90 dark:bg-gray-800/90 px-4 py-2 shadow-md transition-all duration-300 ease-out hover:scale-105 hover:shadow-2xl focus:ring-2 focus:ring-purple-400 dark:shadow-lg"
               >
-                <div className="flex h-full flex-col items-center justify-center px-3">
-                  <div className="flex h-12 items-center justify-center transition-transform duration-300 group-hover:scale-110">
+                <div className="flex h-full flex-col items-center justify-center text-center">
+                  {/* Container สำหรับ Image */}
+                  <div className="flex-shrink-0 flex h-12 items-center justify-center transition-transform duration-300 group-hover:scale-110">
                     <Image src={card.icon} alt={card.title} width={44} height={44} className="object-contain" />
                   </div>
-                  <h3 className="mt-2 text-center text-[15px] font-semibold text-gray-900 dark:text-white transition-colors group-hover:text-gray-950 dark:group-hover:text-gray-100">
-                    {card.title}
-                  </h3>
-                  <p className="text-center text-[12px] text-gray-500 dark:text-gray-400 opacity-0 transition-all duration-300 group-hover:opacity-100">
-                    {card.detail}
-                  </p>
+                  
+                  {/* Container สำหรับ Text */}
+                  <div className="flex flex-col justify-center items-center">
+                    <h3 className="text-[15px] font-semibold text-gray-900 dark:text-white transition-colors group-hover:text-gray-950 dark:group-hover:text-gray-100">
+                      {card.title}
+                    </h3>
+                    {/* Detail text is hidden but exists for hover effect or future use */}
+                    <p className="text-[12px] text-gray-500 dark:text-gray-400 opacity-0 absolute">
+                      {card.detail}
+                    </p>
+                  </div>
                 </div>
               </button>
             </div>
