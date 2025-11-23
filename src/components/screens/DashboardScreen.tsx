@@ -5,7 +5,6 @@ import { ScreenProps } from '@/types';
 import {
   Plane,
   ArrowRight,
-  TrendingDown,
   X,
   Sparkles,
   ChevronLeft,
@@ -254,7 +253,6 @@ const DestinationsCarousel: React.FC<{
             <button
               key={d.city}
               onClick={() => onSelect?.(d.city)}
-              // ADDED cursor-pointer HERE
               className="cursor-pointer group w-[300px] shrink-0 text-left"
             >
               {/* Image Container */}
@@ -298,7 +296,7 @@ const DashboardScreen: React.FC<ScreenProps> = ({
   profile,
   handleNotificationClick,
 }) => {
-  const userName = profile?.first_name || 'Traveler';
+  const userName = profile?.first_name || 'Auto';
   const mockNotificationCount = 3;
 
   const [isDarkMode, setIsDarkMode] = useState(getInitialDarkMode);
@@ -393,52 +391,21 @@ const DashboardScreen: React.FC<ScreenProps> = ({
           </select>
         </div>
 
-        {/* Hero banner */}
+        {/* Hero banner - CLEANED */}
         <div className="mb-6 rounded-[22px] bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl ring-1 ring-white/70 dark:ring-gray-700/70 shadow-[inset_0_0_0.5px_rgba(255,255,255,0.9),0_12px_28px_rgba(17,24,39,0.08)] dark:shadow-xl">
-          <div className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
+          <div className="p-5">
             <div>
               <h2 className="text-2xl font-extrabold text-slate-800 dark:text-white drop-shadow-[0_1px_0_rgba(255,255,255,0.9)] dark:drop-shadow-none tracking-tight">
-                Welcome back{profile?.first_name ? `, ${profile.first_name}` : ''} 👋
+                Welcome back, {userName} 👋
               </h2>
               <p className="text-[15px] text-slate-700 dark:text-gray-300 drop-shadow-[0_1px_0_rgba(255,255,255,0.8)] dark:drop-shadow-none">
                 Plan, upload, and manage your journey effortlessly.
               </p>
             </div>
-
-            <div className="flex items-center gap-3">
-              <div className="hidden md:flex">
-                <input
-                  placeholder="Search documents, visas…"
-                  className="w-64 rounded-xl border border-white/70 dark:border-gray-700/70 bg-white/85 dark:bg-gray-900/85 px-3 py-2 text-sm shadow-inner outline-none focus:ring-2 focus:ring-purple-300 dark:text-gray-100"
-                />
-              </div>
-              <button
-                onClick={() => showScreen('visa')}
-                className="cursor-pointer rounded-xl bg-gradient-to-r from-purple-600 to-pink-500 px-4 py-2 font-semibold text-white shadow hover:shadow-lg active:translate-y-px"
-              >
-                Start a visa check
-              </button>
-            </div>
           </div>
         </div>
         
-        {/* Quick Actions */}
-        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {[
-            { label: 'New Upload', on: () => showScreen('uploadForm') },
-            { label: 'Visa Check', on: () => showScreen('visa') },
-            { label: 'Create Reminder', on: () => showScreen('calendar') },
-            { label: 'Support', on: () => alert('support@jetlay.app') },
-          ].map((a) => (
-            <button
-              key={a.label}
-              onClick={a.on}
-              className="cursor-pointer rounded-xl border border-purple-100 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm transition hover:shadow active:translate-y-px"
-            >
-              {a.label}
-            </button>
-          ))}
-        </div>
+        {/* DELETED: Quick Actions (New Upload, Visa Check, etc.) were removed here */}
 
         {/* Main cards */}
         <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -451,7 +418,6 @@ const DashboardScreen: React.FC<ScreenProps> = ({
             <div key={card.id} className="relative h-36 overflow-visible">
               <button
                 onClick={() => showScreen(card.id)}
-                // ADDED cursor-pointer HERE
                 className="cursor-pointer group absolute inset-0 transform-gpu rounded-2xl border border-white/70 dark:border-gray-700 bg-white/90 dark:bg-gray-800/90 px-4 py-2 shadow-md transition-all duration-300 ease-out hover:scale-105 hover:shadow-2xl focus:ring-2 focus:ring-purple-400 dark:shadow-lg"
               >
                 <div className="flex h-full flex-col items-center justify-center text-center">
