@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseRouteClient } from '@/lib/supabaseRouteClient';
 
+type RouteParams = {
+  params: Promise<{ id: string }>;
+};
+
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: RouteParams
 ) {
+  const { id } = await params;  // ✅ MUST await
   const supabase = getSupabaseRouteClient();
 
   const {
@@ -15,11 +20,11 @@ export async function DELETE(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // 1) get doc to know storage_path (RLS ensures it's this user's)
+  // 1) get doc to know storage_path
   const { data: doc, error: docError } = await supabase
     .from('documents')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)                   // ✅ use id, not params.id
     .single();
 
   if (docError || !doc) {
@@ -43,7 +48,7 @@ export async function DELETE(
   const { error: deleteError } = await supabase
     .from('documents')
     .delete()
-    .eq('id', params.id);
+    .eq('id', id);
 
   if (deleteError) {
     console.error(deleteError);

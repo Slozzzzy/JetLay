@@ -1,7 +1,31 @@
+// src/app/api/documents/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseServer';
-import { computeStatus } from '@/lib/documentStatus';
+import { computeStatus } from '@/lib/documentStatus'; // ⬅️ default import
 
+// Keep this in sync with your DB schema
+interface DocumentRow {
+  id: string;
+  user_id: string;
+  title: string;
+  expiry_date: string | null;
+  document_type: string;
+  storage_path: string | null;
+  created_at: string;
+}
+
+type DocumentStatus = 'valid' | 'expiring' | 'expired';
+
+interface DocumentResponse {
+  id: string;
+  title: string;
+  expiry_date: string | null;
+  document_type: string;
+  status: DocumentStatus;
+  url: string | null;
+}
+
+// GET /api/documents?userId=xxxx
 export async function GET(req: NextRequest) {
   const supabase = supabaseServer;
 
@@ -18,38 +42,32 @@ export async function GET(req: NextRequest) {
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
-  if (error) {
-    console.error('GET /api/documents error:', error);
+  if (error || !data) {
+    console.error('Fetch documents error:', error);
     return NextResponse.json(
       { error: 'Failed to fetch documents' },
       { status: 500 }
     );
   }
 
-  const docsWithMaybeNulls = await Promise.all(
-    (data ?? []).map(async (doc) => {
+  const rows = data as DocumentRow[];
+
+  const docs: DocumentResponse[] = await Promise.all(
+    rows.map(async (doc) => {
       let signedUrl: string | null = null;
 
       if (doc.storage_path) {
-        const { data: signed, error: urlError } = await supabase.storage
+        const { data: signed, error: signedError } = await supabase.storage
           .from('documents')
-          .createSignedUrl(doc.storage_path, 60 * 60);
+          .createSignedUrl(doc.storage_path, 60 * 60); // 1 hour
 
-        if (urlError) {
-          // If the object is missing, just skip this document
-          if ((urlError as any).statusCode === '404') {
-            console.warn(
-              `Object not found for doc ${doc.id}, path ${doc.storage_path} – skipping`
-            );
-            return null;            // <<-- SKIP THIS ROW
-          }
-
+        if (!signedError && signed) {
+          signedUrl = signed.signedUrl;
+        } else if (signedError) {
           console.warn(
-            `Signed URL error – doc ${doc.id}, path ${doc.storage_path}: ${urlError.message}`
+            `Failed to create signed URL for doc ${doc.id}:`,
+            signedError
           );
-          // for other errors, keep doc but without url
-        } else {
-          signedUrl = signed?.signedUrl ?? null;
         }
       }
 
@@ -58,58 +76,71 @@ export async function GET(req: NextRequest) {
         title: doc.title,
         expiry_date: doc.expiry_date,
         document_type: doc.document_type,
-        status: computeStatus(doc.expiry_date, doc.document_type),
+        // ⬇️ pass BOTH arguments that computeStatus expects
+        status: computeStatus(doc.expiry_date, doc.document_type) as DocumentStatus,
         url: signedUrl,
       };
     })
   );
 
-  const docs = docsWithMaybeNulls.filter(Boolean); // remove nulls
-
   return NextResponse.json(docs);
 }
 
-
-// ✅ POST /api/documents
-// Body: { userId, title, expiryDate, documentType, storagePath }
+// POST /api/documents
 export async function POST(req: NextRequest) {
   const supabase = supabaseServer;
 
-  const body = await req.json();
-  const { userId, title, expiryDate, documentType, storagePath } = body;
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
 
-  // We now require storagePath (the one used by the client upload)
-  if (!userId || !title || !expiryDate || !storagePath) {
+  if (typeof body !== 'object' || body === null) {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+  }
+
+  const {
+    userId,
+    title,
+    expiryDate,
+    documentType,
+    storagePath,
+  } = body as {
+    userId?: string;
+    title?: string;
+    expiryDate?: string;
+    documentType?: string;
+    storagePath?: string;
+  };
+
+  if (!userId || !title || !expiryDate || !documentType || !storagePath) {
     return NextResponse.json(
-      { error: 'userId, title, expiryDate, storagePath are required' },
+      { error: 'Missing required fields' },
       { status: 400 }
     );
   }
 
-  console.log('📁 POST /api/documents storagePath =>', storagePath);
-
-  const { data: inserted, error: insertError } = await supabase
+  const { data, error } = await supabase
     .from('documents')
     .insert({
       user_id: userId,
       title,
       expiry_date: expiryDate,
       document_type: documentType,
-      storage_path: storagePath, // DO NOT CHANGE – must match upload path
+      storage_path: storagePath,
     })
     .select()
     .single();
 
-  if (insertError || !inserted) {
-    console.error('Insert document error:', insertError);
+  if (error || !data) {
+    console.error('Insert document error:', error);
     return NextResponse.json(
-      { error: 'Failed to create document record' },
+      { error: 'Failed to create document' },
       { status: 500 }
     );
   }
 
-  return NextResponse.json({
-    id: inserted.id,
-    storagePath,
-  });
+  return NextResponse.json(data, { status: 201 });
 }

@@ -42,13 +42,22 @@ const DocumentListScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
         const res = await fetch(`/api/documents?userId=${profile.id}`);
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
-          throw new Error(data.error || 'Failed to load documents');
+          const message =
+            typeof data === 'object' && data && 'error' in data
+              ? (data as { error?: string }).error
+              : undefined;
+          throw new Error(message || 'Failed to load documents');
         }
-        const data = await res.json();
+
+        const data = (await res.json()) as DocumentItem[];
         setDocuments(data);
-      } catch (err: any) {
+      } catch (err) {
         console.error(err);
-        setError(err.message || 'Something went wrong');
+        if (err instanceof Error) {
+          setError(err.message || 'Something went wrong');
+        } else {
+          setError('Something went wrong');
+        }
       } finally {
         setLoading(false);
       }
@@ -67,21 +76,26 @@ const DocumentListScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
     if (!confirmDelete) return;
 
     try {
-      const res = await fetch(
-        `/api/documents/${id}?userId=${profile.id}`,
-        { method: 'DELETE' }
-      );
+      const res = await fetch(`/api/documents/${id}?userId=${profile.id}`, {
+        method: 'DELETE',
+      });
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || 'Failed to delete document');
+        const message =
+          typeof data === 'object' && data && 'error' in data
+            ? (data as { error?: string }).error
+            : undefined;
+        throw new Error(message || 'Failed to delete document');
       }
 
       // Remove from local state
       setDocuments((prev) => prev.filter((doc) => doc.id !== id));
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      alert(err.message || 'Failed to delete document');
+      const message =
+        err instanceof Error ? err.message : 'Failed to delete document';
+      alert(message);
     }
   };
 
@@ -130,7 +144,11 @@ const DocumentListScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
                   {doc.url && (
                     <button
                       className="mt-2 text-xs underline text-blue-600 hover:text-blue-800 text-left"
-                      onClick={() => window.open(doc.url!, '_blank')}
+                      onClick={() => {
+                        if (doc.url) {
+                          window.open(doc.url, '_blank');
+                        }
+                      }}
                     >
                       View document
                     </button>

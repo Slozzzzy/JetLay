@@ -229,7 +229,6 @@ const App = () => {
       mounted = false;
       if (data?.subscription) data.subscription.unsubscribe();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleGoogleLogin = useCallback(async () => {

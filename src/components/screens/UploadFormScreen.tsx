@@ -20,109 +20,129 @@ const UploadFormScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  console.log('▶️ handleSubmit start');
-  setError(null);
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    console.log('▶️ handleSubmit start');
+    setError(null);
 
-  if (!profile?.id) {
-    setError('User profile not loaded.');
-    console.error('❗ No profile.id on UploadFormScreen');
-    return;
-  }
-  if (!documentName.trim()) {
-    setError('Please enter a document name.');
-    return;
-  }
-  if (!expiryDate) {
-    setError('Please choose an expiry date.');
-    return;
-  }
-  if (!file) {
-    setError('Please select a file.');
-    return;
-  }
+    if (!profile?.id) {
+      setError('User profile not loaded.');
+      console.error('❗ No profile.id on UploadFormScreen');
+      return;
+    }
+    if (!documentName.trim()) {
+      setError('Please enter a document name.');
+      return;
+    }
+    if (!expiryDate) {
+      setError('Please choose an expiry date.');
+      return;
+    }
+    if (!file) {
+      setError('Please select a file.');
+      return;
+    }
 
-  try {
-    setSubmitting(true);
-
-    const userId = profile.id;
-    console.log('👤 using userId =>', userId);
-
-    const safeFileName = file.name.replace(/\s+/g, '_');
-    const storagePath = `${userId}/${crypto.randomUUID()}/${safeFileName}`;
-    console.log('📁 client storagePath =>', storagePath);
-    console.log('⬆️ starting supabase.storage.upload...');
-
-    // --- ⏱ add a 20s timeout around the upload ---
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => {
-      console.warn('⏱ Upload timed out, aborting request');
-      controller.abort();
-    }, 60000); // 20 seconds
-
-    let uploadData, uploadError;
     try {
-      const result = await supabase.storage
-        .from('documents')
-        .upload(storagePath, file, {
-          upsert: false,
-          // @ts-ignore – supabase-js v2 accepts signal
-          signal: controller.signal,
-        });
-      uploadData = result.data;
-      uploadError = result.error;
-    } catch (err: any) {
-      clearTimeout(timeoutId);
-      if (err?.name === 'AbortError') {
-        throw new Error('Upload took too long. Please check your internet and try again.');
+      setSubmitting(true);
+
+      const userId = profile.id;
+      console.log('👤 using userId =>', userId);
+
+      const safeFileName = file.name.replace(/\s+/g, '_');
+      const storagePath = `${userId}/${crypto.randomUUID()}/${safeFileName}`;
+      console.log('📁 client storagePath =>', storagePath);
+      console.log('⬆️ starting supabase.storage.upload...');
+
+      // --- ⏱ add a timeout around the upload ---
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        console.warn('⏱ Upload timed out, aborting request');
+        controller.abort();
+      }, 60000); // 60 seconds
+
+      let uploadData;
+      let uploadError;
+
+      try {
+        const result = await supabase.storage
+          .from('documents')
+          .upload(storagePath, file, {
+            upsert: false,
+            // @ts-expect-error – supabase-js v2 accepts signal
+            signal: controller.signal,
+          });
+
+        uploadData = result.data;
+        uploadError = result.error;
+      } catch (err) {
+        clearTimeout(timeoutId);
+
+        if (err instanceof DOMException && err.name === 'AbortError') {
+          throw new Error(
+            'Upload took too long. Please check your internet and try again.'
+          );
+        }
+
+        if (err instanceof Error) {
+          throw err;
+        }
+
+        throw new Error('Unexpected upload error');
       }
-      throw err;
+
+      clearTimeout(timeoutId);
+      console.log('✅ upload finished, result =>', { uploadData, uploadError });
+
+      if (uploadError) {
+        console.error('🚫 Upload error =>', uploadError);
+        throw new Error(uploadError.message || 'File upload failed');
+      }
+
+      console.log('📨 calling /api/documents...');
+      const res = await fetch('/api/documents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          title: `${documentType} - ${documentName}`,
+          expiryDate,
+          documentType,
+          storagePath,
+        }),
+      });
+      console.log('📨 /api/documents response status =>', res.status);
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const message =
+          typeof data === 'object' && data && 'error' in data
+            ? (data as { error?: string }).error
+            : undefined;
+        console.error('POST /api/documents failed:', res.status, data);
+        throw new Error(message || 'Failed to create document record.');
+      }
+
+      await res.json().catch(() => ({}));
+
+      setDocumentName('');
+      setExpiryDate('');
+      setFile(null);
+
+      // go back to list screen
+      showScreen('upload');
+    } catch (err) {
+      console.error('❗handleSubmit error =>', err);
+      if (err instanceof Error) {
+        setError(err.message || 'Something went wrong');
+      } else {
+        setError('Something went wrong');
+      }
+    } finally {
+      setSubmitting(false);
+      console.log('⏹ handleSubmit end');
     }
-    clearTimeout(timeoutId);
-    console.log('✅ upload finished, result =>', { uploadData, uploadError });
-
-    if (uploadError) {
-      console.error('🚫 Upload error =>', uploadError);
-      throw new Error(uploadError.message || 'File upload failed');
-    }
-
-    console.log('📨 calling /api/documents...');
-    const res = await fetch('/api/documents', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userId,
-        title: `${documentType} - ${documentName}`,
-        expiryDate,
-        documentType,
-        storagePath,
-      }),
-    });
-    console.log('📨 /api/documents response status =>', res.status);
-
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      console.error('POST /api/documents failed:', res.status, data);
-      throw new Error(data.error || 'Failed to create document record.');
-    }
-
-    await res.json().catch(() => ({}));
-
-    setDocumentName('');
-    setExpiryDate('');
-    setFile(null);
-
-    showScreen('upload'); // back to list
-  } catch (err: any) {
-    console.error('❗handleSubmit error =>', err);
-    setError(err.message || 'Something went wrong');
-  } finally {
-    setSubmitting(false);
-    console.log('⏹ handleSubmit end');
-  }
-};
-
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-purple-50 pb-20">

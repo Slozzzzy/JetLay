@@ -2,12 +2,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseServer';
 
+type RouteParams = {
+  params: Promise<{ id: string }>;
+};
+
 export async function DELETE(
   req: NextRequest,
-  context: { params: Promise<{ id: string }> } 
+  { params }: RouteParams
 ) {
-  const { id: docId } = await context.params;   
-  const supabase = supabaseServer;            
+  const { id: docId } = await params;        
+  const supabase = supabaseServer;          
   const { searchParams } = new URL(req.url);
   const userId = searchParams.get('userId');
 
@@ -19,7 +23,7 @@ export async function DELETE(
     return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
   }
 
-  // 1) Load the document, ensure it belongs to this user
+  // 1) Ensure doc belongs to this user
   const { data: doc, error: fetchError } = await supabase
     .from('documents')
     .select('*')
@@ -29,13 +33,10 @@ export async function DELETE(
 
   if (fetchError || !doc) {
     console.error('Fetch document before delete error:', fetchError);
-    return NextResponse.json(
-      { error: 'Document not found' },
-      { status: 404 }
-    );
+    return NextResponse.json({ error: 'Document not found' }, { status: 404 });
   }
 
-  // 2) Delete from storage (ignore not-found errors)
+  // 2) Delete from storage (ignore "not found")
   if (doc.storage_path) {
     const { error: storageError } = await supabase.storage
       .from('documents')
@@ -49,7 +50,7 @@ export async function DELETE(
     }
   }
 
-  // 3) Delete from database
+  // 3) Delete DB row
   const { error: deleteError } = await supabase
     .from('documents')
     .delete()
