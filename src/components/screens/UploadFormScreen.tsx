@@ -1,153 +1,211 @@
-// src/components/screens/UploadFormScreen.tsx
 import React, { useState } from 'react';
 import Header from '@/components/core/Header';
-import { supabase } from '@/lib/supabaseClient';
 import { ScreenProps } from '@/types';
+import { supabase } from '@/lib/supabaseClient';
 
-const UploadFormScreen: React.FC<ScreenProps> = ({ showScreen, showAlert, profile }) => {
-  const [docType, setDocType] = useState<string>('Passport');
-  const [customName, setCustomName] = useState<string>('');
+const documentTypeOptions = [
+  'Passport',
+  'Visa',
+  'ID Card',
+  'Travel Insurance',
+  'Flight Ticket',
+  'Hotel Booking',
+];
+
+const UploadFormScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
+  const [documentType, setDocumentType] = useState('Passport');
+  const [documentName, setDocumentName] = useState('');
+  const [expiryDate, setExpiryDate] = useState('');
   const [file, setFile] = useState<File | null>(null);
-  const [fileName, setFileName] = useState<string>('No file chosen');
-  const [expiryDate, setExpiryDate] = useState<string>('');
-  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
-      setFileName(e.target.files[0].name);
-    } else {
-      setFile(null);
-      setFileName('No file chosen');
-    }
-  };
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  console.log('▶️ handleSubmit start');
+  setError(null);
 
-  const handleSave = async () => {
-    if (!file) {
-      showAlert?.('Please choose a file first.', 'error');
-      return;
-    }
-    if (!customName.trim()) {
-      showAlert?.('Please enter a document name.', 'error');
-      return;
-    }
+  if (!profile?.id) {
+    setError('User profile not loaded.');
+    console.error('❗ No profile.id on UploadFormScreen');
+    return;
+  }
+  if (!documentName.trim()) {
+    setError('Please enter a document name.');
+    return;
+  }
+  if (!expiryDate) {
+    setError('Please choose an expiry date.');
+    return;
+  }
+  if (!file) {
+    setError('Please select a file.');
+    return;
+  }
 
+  try {
+    setSubmitting(true);
+
+    const userId = profile.id;
+    console.log('👤 using userId =>', userId);
+
+    const safeFileName = file.name.replace(/\s+/g, '_');
+    const storagePath = `${userId}/${crypto.randomUUID()}/${safeFileName}`;
+    console.log('📁 client storagePath =>', storagePath);
+    console.log('⬆️ starting supabase.storage.upload...');
+
+    // --- ⏱ add a 20s timeout around the upload ---
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      console.warn('⏱ Upload timed out, aborting request');
+      controller.abort();
+    }, 60000); // 20 seconds
+
+    let uploadData, uploadError;
     try {
-      setIsSaving(true);
-
-      const userId = profile?.id ?? 'anonymous';
-      const ext = file.name.split('.').pop() ?? '';
-      const storagePath = `${userId}/${Date.now()}_${customName.replace(/\s+/g, '_')}.${ext}`;
-
-      // 1) Upload to Storage (bucket must exist, e.g., "documents")
-      const { error: uploadErr } = await supabase
-        .storage
+      const result = await supabase.storage
         .from('documents')
-        .upload(storagePath, file, { contentType: file.type, upsert: false });
-
-      if (uploadErr) throw uploadErr;
-
-      // 2) Get public (or signed) URL if you use public bucket
-      const { data: pub } = supabase.storage.from('documents').getPublicUrl(storagePath);
-      const publicUrl = pub?.publicUrl ?? null;
-
-      // 3) Insert metadata row (adjust table/columns to your schema)
-      const { error: insertErr } = await supabase.from('documents').insert({
-        owner_id: userId,
-        doc_type: docType,
-        custom_name: customName,
-        expiry_date: expiryDate || null,
-        storage_path: storagePath,
-        original_name: file.name,
-        mime_type: file.type,
-        public_url: publicUrl
-      });
-
-      if (insertErr) throw insertErr;
-
-      showAlert?.('Uploaded successfully ✅', 'success');
-      setFile(null);
-      setFileName('No file chosen');
-      setCustomName('');
-      setExpiryDate('');
-      // showScreen?.('DocumentList'); // optional navigation
-    } catch (err: unknown) {
-      console.error(err);
-      if (err instanceof Error) {
-        showAlert?.(err.message, 'error');
-      } else {
-        showAlert?.('Upload failed', 'error');
+        .upload(storagePath, file, {
+          upsert: false,
+          // @ts-ignore – supabase-js v2 accepts signal
+          signal: controller.signal,
+        });
+      uploadData = result.data;
+      uploadError = result.error;
+    } catch (err: any) {
+      clearTimeout(timeoutId);
+      if (err?.name === 'AbortError') {
+        throw new Error('Upload took too long. Please check your internet and try again.');
       }
-    } finally {
-      setIsSaving(false);
+      throw err;
     }
-  };
+    clearTimeout(timeoutId);
+    console.log('✅ upload finished, result =>', { uploadData, uploadError });
+
+    if (uploadError) {
+      console.error('🚫 Upload error =>', uploadError);
+      throw new Error(uploadError.message || 'File upload failed');
+    }
+
+    console.log('📨 calling /api/documents...');
+    const res = await fetch('/api/documents', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId,
+        title: `${documentType} - ${documentName}`,
+        expiryDate,
+        documentType,
+        storagePath,
+      }),
+    });
+    console.log('📨 /api/documents response status =>', res.status);
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      console.error('POST /api/documents failed:', res.status, data);
+      throw new Error(data.error || 'Failed to create document record.');
+    }
+
+    await res.json().catch(() => ({}));
+
+    setDocumentName('');
+    setExpiryDate('');
+    setFile(null);
+
+    showScreen('upload'); // back to list
+  } catch (err: any) {
+    console.error('❗handleSubmit error =>', err);
+    setError(err.message || 'Something went wrong');
+  } finally {
+    setSubmitting(false);
+    console.log('⏹ handleSubmit end');
+  }
+};
+
 
   return (
     <div className="flex flex-col min-h-screen bg-purple-50 pb-20">
       <Header
         title="Upload Document"
-        onBack={() => showScreen?.('welcome')}
+        onBack={() => showScreen('upload')}
         showProfileIcon={true}
         showScreen={showScreen}
         profile={profile}
       />
 
-      <div className="p-6 flex-1 max-w-3xl mx-auto w-full">
-        <div className="bg-white p-6 rounded-xl shadow-xl border border-purple-200 space-y-5">
+      <div className="p-6 flex-1 max-w-xl mx-auto w-full">
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-4 bg-white p-5 rounded-xl shadow-md border border-gray-200"
+        >
+          {error && <p className="text-red-600 text-sm">{error}</p>}
+
+          {/* Document type */}
           <div>
-            <label className="block text-sm font-medium text-gray-700">Document type</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Document Type
+            </label>
             <select
-              className="mt-1 w-full rounded-lg border px-3 py-2"
-              value={docType}
-              onChange={(e) => setDocType(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              value={documentType}
+              onChange={(e) => setDocumentType(e.target.value)}
             >
-              <option>Passport</option>
-              <option>Visa</option>
-              <option>Bank Statement</option>
-              <option>Flight Ticket</option>
-              <option>Hotel Booking</option>
-              <option>Other</option>
+              {documentTypeOptions.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
             </select>
           </div>
 
+          {/* Document name */}
           <div>
-            <label className="block text-sm font-medium text-gray-700">Document name</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Document Name
+            </label>
             <input
               type="text"
-              className="mt-1 w-full rounded-lg border px-3 py-2"
-              placeholder="e.g., Passport - Charles Leclerc"
-              value={customName}
-              onChange={(e) => setCustomName(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              placeholder="e.g. Main passport, Schengen visa"
+              value={documentName}
+              onChange={(e) => setDocumentName(e.target.value)}
             />
           </div>
 
+          {/* Expiry date */}
           <div>
-            <label className="block text-sm font-medium text-gray-700">Expiry date (optional)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Expiry Date
+            </label>
             <input
               type="date"
-              className="mt-1 w-full rounded-lg border px-3 py-2"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
               value={expiryDate}
               onChange={(e) => setExpiryDate(e.target.value)}
             />
           </div>
 
+          {/* File input */}
           <div>
-            <label className="block text-sm font-medium text-gray-700">File</label>
-            <div className="mt-1 flex items-center gap-3">
-              <input type="file" onChange={handleFileChange} />
-              <span className="text-sm text-gray-500">{fileName}</span>
-            </div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Document File
+            </label>
+            <input
+              type="file"
+              className="w-full text-sm"
+              onChange={(e) => setFile(e.target.files?.[0] || null)}
+            />
           </div>
 
           <button
-            onClick={handleSave}
-            disabled={isSaving}
-            className="w-full rounded-xl bg-purple-600 text-white font-semibold py-3 disabled:opacity-60"
+            type="submit"
+            disabled={submitting}
+            className="w-full mt-2 py-3 bg-yellow-400 text-gray-900 font-bold rounded-xl shadow-md hover:bg-yellow-500 disabled:opacity-60"
           >
-            {isSaving ? 'Saving…' : 'Save'}
+            {submitting ? 'Saving...' : 'Save Document'}
           </button>
-        </div>
+        </form>
       </div>
     </div>
   );
