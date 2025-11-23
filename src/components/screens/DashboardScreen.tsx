@@ -348,7 +348,7 @@ const DashboardScreen: React.FC<ScreenProps> = ({
   const roundTrips: RoundTrip[] = [
     { days: 5, rangeText: 'Thu, Dec 11– Mon, Dec 15', fromTo: 'Hong Kong  ⇄  Tsushima', priceTHB: 11379 },
     { days: 7, rangeText: 'Tue, Jan 13– Mon, Jan 19', fromTo: 'Bangkok  ⇄  Tsushima', priceTHB: 13572 },
-    { days: 8, rangeText: 'Mon, Dec 15– Mon, Dec 22', fromTo: 'Kuala Lumpur  ⇄  Tsushima', priceTHB: 17809 },
+    { days: 2, rangeText: 'Mon, Dec 15– Mon, Dec 22', fromTo: 'Kuala Lumpur  ⇄  Tsushima', priceTHB: 17809 },
   ];
   const destinations: Destination[] = [
     { city: 'Paris, France', img: 'https://www.royalcaribbean.com/media-assets/pmc/content/dam/shore-x/paris-le-havre-leh/lh17-paris-sightseeing-without-lunch/stock-photo-skyline-of-paris-with-eiffel-tower-at-sunset-in-paris-france-eiffel-tower-is-one-of-the-most-752725282.jpg?w=1024', stats: '32,150 accommodations' },
@@ -511,7 +511,7 @@ const DashboardScreen: React.FC<ScreenProps> = ({
         </section>
 
         {/* Recently Used (FRAMED) */}
-        <section className="mb-8 rounded-[22px] bg-white/70 dark:bg-gray-800/70 p-4 backdrop-blur-xl ring-1 ring-white/60 dark:ring-gray-700/60 shadow-[0_4px_30px_rgba(0,0,0,0.05)]">
+        {/* <section className="mb-8 rounded-[22px] bg-white/70 dark:bg-gray-800/70 p-4 backdrop-blur-xl ring-1 ring-white/60 dark:ring-gray-700/60 shadow-[0_4px_30px_rgba(0,0,0,0.05)]">
           <div className="mb-2 flex items-center justify-between">
             <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-300">Recently used</h4>
             <button onClick={() => showScreen('upload')} className="text-sm font-medium text-purple-600 hover:underline dark:text-purple-400">
@@ -538,10 +538,10 @@ const DashboardScreen: React.FC<ScreenProps> = ({
               </li>
             ))}
           </ul>
-        </section>
+        </section> */}
 
         {/* Flight Deals Section (FRAMED) */}
-        <section className="mb-8 rounded-[22px] bg-white/70 dark:bg-gray-800/70 p-6 backdrop-blur-xl ring-1 ring-white/60 dark:ring-gray-700/60 shadow-[0_4px_30px_rgba(0,0,0,0.05)]">
+        {/* <section className="mb-8 rounded-[22px] bg-white/70 dark:bg-gray-800/70 p-6 backdrop-blur-xl ring-1 ring-white/60 dark:ring-gray-700/60 shadow-[0_4px_30px_rgba(0,0,0,0.05)]">
           <h3 className="mb-1 text-2xl font-bold text-gray-900 dark:text-white">Latest Flight Deals to Tsushima</h3>
           <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
             These are the best offers we found in the next 60 days. Don’t miss out!
@@ -564,7 +564,7 @@ const DashboardScreen: React.FC<ScreenProps> = ({
               </button>
             </div>
           </div>
-        </section>
+        </section> */}
 
         {/* Round-trip Section (FRAMED) */}
         <section className="rounded-[22px] bg-white/70 dark:bg-gray-800/70 p-6 backdrop-blur-xl ring-1 ring-white/60 dark:ring-gray-700/60 shadow-[0_4px_30px_rgba(0,0,0,0.05)]">

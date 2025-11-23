@@ -5,7 +5,7 @@ type WelcomeChoiceScreenProps = {
 };
 
 const WelcomeChoiceScreen: React.FC<WelcomeChoiceScreenProps> = ({ showScreen }) => (
-  <div className="relative min-h-screen flex flex-col justify-center items-center text-center p-6 bg-gradient-to-br from-purple-200 via-pink-200 to-rose-200 grainy-bg">
+  <div className="relative min-h-screen min-w-screen flex flex-col justify-center items-center text-center p-6 bg-gradient-to-br from-purple-200 via-pink-200 to-rose-200 grainy-bg">
     <style jsx global>{`
       .grainy-bg::after {
         content: '';
@@ -35,6 +35,7 @@ const WelcomeChoiceScreen: React.FC<WelcomeChoiceScreenProps> = ({ showScreen })
     </div>
 
     <div className="flex flex-col gap-4 w-full max-w-xs">
+      
       <button
         className="w-full py-3 bg-white text-gray-900 font-bold text-lg rounded-full shadow-xl hover:scale-[1.03] transition duration-200"
         onClick={() => showScreen('createAccount')}
@@ -42,7 +43,7 @@ const WelcomeChoiceScreen: React.FC<WelcomeChoiceScreenProps> = ({ showScreen })
         Create Account
       </button>
       <button
-        className="w-full py-3 bg-white/30 text-white font-bold text-lg rounded-full border border-white/50 backdrop-blur-sm hover:bg-white/40 transition duration-200"
+        className="w-full py-3 bg-white/30 text-white font-bold text-lg rounded-full border border-white/50 backdrop-blur-sm hover:bg-white/40 hover:scale-[1.03] transition duration-200"
         onClick={() => showScreen('welcomeBack')}
       >
         Log In

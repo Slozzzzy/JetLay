@@ -176,12 +176,12 @@ const ChangePasswordScreen: React.FC<ScreenProps> = ({ showScreen, showAlert }) 
           {loading ? 'Updating…' : 'Update Password'}
         </button>
 
-        <p className="text-xs text-gray-500 mt-4 text-center">
+        {/* <p className="text-xs text-gray-500 mt-4 text-center">
           Tip: Avoid reusing passwords and consider a password manager.
-        </p>
+        </p> */}
       </div>
     </div>
   );
 };
-
+//try
 export default ChangePasswordScreen;
