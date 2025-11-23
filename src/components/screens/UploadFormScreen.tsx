@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import Header from '@/components/core/Header';
 import { supabase } from '@/lib/supabaseClient';
 import { ScreenProps } from '@/types';
-import { Upload } from 'lucide-react'; // nice upload icon
+import { Upload } from 'lucide-react'; 
 
 const UploadFormScreen: React.FC<ScreenProps> = ({ showScreen, showAlert, profile }) => {
   const [docType, setDocType] = useState<string>('Passport');
@@ -97,7 +97,7 @@ const UploadFormScreen: React.FC<ScreenProps> = ({ showScreen, showAlert, profil
           <div>
             <label className="block text-sm font-medium text-gray-700">Document type</label>
             <select
-              className="mt-1 w-full rounded-lg border px-3 py-2"
+              className="cursor-pointer mt-1 w-full rounded-lg border px-3 py-2"
               value={docType}
               onChange={(e) => setDocType(e.target.value)}
             >
@@ -127,7 +127,7 @@ const UploadFormScreen: React.FC<ScreenProps> = ({ showScreen, showAlert, profil
             <label className="block text-sm font-medium text-gray-700">Expiry date (optional)</label>
             <input
               type="date"
-              className="mt-1 w-full rounded-lg border px-3 py-2"
+              className="cursor-pointer mt-1 w-full rounded-lg border px-3 py-2"
               value={expiryDate}
               onChange={(e) => setExpiryDate(e.target.value)}
             />
@@ -170,7 +170,7 @@ const UploadFormScreen: React.FC<ScreenProps> = ({ showScreen, showAlert, profil
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="w-full rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 transition-all hover:shadow-lg disabled:opacity-60"
+            className="cursor-pointer w-full rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 transition-all hover:shadow-lg disabled:opacity-60"
           >
             {isSaving ? 'Saving…' : 'Save'}
           </button>

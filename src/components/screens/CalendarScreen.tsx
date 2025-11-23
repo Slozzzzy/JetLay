@@ -59,6 +59,7 @@ const CalendarScreen: React.FC<ScreenProps> = ({ showScreen, showAlert, profile 
           const hasNote = notes[dateKey];
 
           // Build dynamic classes for the cell
+          // Already has cursor-pointer
           let cellClasses = "p-3 border border-gray-200 cursor-pointer transition-colors relative";
           if (isToday) cellClasses += " bg-yellow-100 font-bold";
           if (isSelected) cellClasses += " bg-blue-200 ring-2 ring-blue-500";
@@ -128,14 +129,14 @@ const CalendarScreen: React.FC<ScreenProps> = ({ showScreen, showAlert, profile 
       <div className="p-6 flex-1 max-w-5xl mx-auto w-full">
         {/* --- Calendar Controls (No change) --- */}
         <div className="flex flex-wrap gap-3 items-center mb-4">
-          <select className="p-3 border border-gray-300 rounded-lg" value={currentMonth} onChange={(e) => setCurrentMonth(parseInt(e.target.value))}>
+          <select className="cursor-pointer p-3 border border-gray-300 rounded-lg" value={currentMonth} onChange={(e) => setCurrentMonth(parseInt(e.target.value))}>
             {monthNames.map((name, index) => <option key={name} value={index}>{name}</option>)}
           </select>
-          <select className="p-3 border border-gray-300 rounded-lg" value={currentYear} onChange={(e) => setCurrentYear(parseInt(e.target.value))}>
+          <select className="cursor-pointer p-3 border border-gray-300 rounded-lg" value={currentYear} onChange={(e) => setCurrentYear(parseInt(e.target.value))}>
             {Array.from({ length: 10 }, (_, i) => today.getFullYear() + i).map(y => <option key={y} value={y}>{y}</option>)}
           </select>
-          <button className="px-4 py-3 bg-yellow-400 text-gray-900 font-bold rounded-lg" onClick={() => changeMonth(-1)}>&#9664;</button>
-          <button className="px-4 py-3 bg-yellow-400 text-gray-900 font-bold rounded-lg" onClick={() => changeMonth(1)}>&#9654;</button>
+          <button className="cursor-pointer px-4 py-3 bg-yellow-400 text-gray-900 font-bold rounded-lg" onClick={() => changeMonth(-1)}>&#9664;</button>
+          <button className="cursor-pointer px-4 py-3 bg-yellow-400 text-gray-900 font-bold rounded-lg" onClick={() => changeMonth(1)}>&#9654;</button>
         </div>
         
         {/* --- Calendar Table (No change) --- */}
@@ -165,12 +166,12 @@ const CalendarScreen: React.FC<ScreenProps> = ({ showScreen, showAlert, profile 
             disabled={!selectedDate} // Disable if no day is selected
           />
           <button 
-            className="w-full py-3 bg-yellow-400 text-gray-900 font-bold rounded-xl disabled:bg-gray-300" 
+            className="cursor-pointer w-full py-3 bg-yellow-400 text-gray-900 font-bold rounded-xl disabled:bg-gray-300" 
             onClick={handleSaveNote}
             disabled={!selectedDate} // Disable if no day is selected
           >
             Save Note
-          </button>CheckCircleIcon
+          </button>
         </div>
       </div>
     </div>

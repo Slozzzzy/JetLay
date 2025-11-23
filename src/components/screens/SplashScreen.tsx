@@ -83,6 +83,8 @@ const SplashScreen: React.FC<Props> = ({ onFinish, sessionReady }) => {
           opacity: 1;
           visibility: visible;
           pointer-events: auto;
+          /* Added cursor pointer to indicate click-to-dismiss */
+          cursor: pointer;
         }
         .splash-overlay.exiting {
           opacity: 0;

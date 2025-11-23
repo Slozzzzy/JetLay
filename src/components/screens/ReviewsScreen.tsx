@@ -100,7 +100,7 @@ const ReviewsScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
         </div>
 
         <button
-          className="w-64 py-3 mt-8 text-white font-bold rounded-xl shadow-lg transition"
+          className="cursor-pointer w-64 py-3 mt-8 text-white font-bold rounded-xl shadow-lg transition"
           style={{ background: 'linear-gradient(90deg, #d8b4fe, #fbcfe8)', color: '#1e1b4b' }}
           onClick={() => showScreen('addReview')}
         >

@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { ScreenProps } from '@/types';
-import { Eye, EyeOff } from 'lucide-react'; // ✅ Modern eye icons
+import { Eye, EyeOff } from 'lucide-react'; 
 
 const ChangePasswordScreen: React.FC<ScreenProps> = ({ showScreen, showAlert }) => {
   const [email, setEmail] = useState<string>('');
@@ -102,7 +102,7 @@ const ChangePasswordScreen: React.FC<ScreenProps> = ({ showScreen, showAlert }) 
         <button
           type="button"
           onClick={toggleVisibility}
-          className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 active:scale-95 z-10"
+          className="cursor-pointer absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700 active:scale-95 z-10"
           aria-label={isVisible ? 'Hide password' : 'Show password'}
         >
           {isVisible ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -116,7 +116,7 @@ const ChangePasswordScreen: React.FC<ScreenProps> = ({ showScreen, showAlert }) 
       <div className="w-full max-w-md">
         <div className="relative mb-6 text-center">
           <button
-            className="absolute top-1 left-0 text-gray-600 font-semibold flex items-center"
+            className="cursor-pointer absolute top-1 left-0 text-gray-600 font-semibold flex items-center"
             onClick={() => showScreen('user')}
           >
             &larr; Back
@@ -166,7 +166,7 @@ const ChangePasswordScreen: React.FC<ScreenProps> = ({ showScreen, showAlert }) 
         </div>
 
         <button
-          className={`w-full py-4 text-white font-bold text-lg rounded-full shadow-lg transition duration-150 ease-in-out ${
+          className={`cursor-pointer w-full py-4 text-white font-bold text-lg rounded-full shadow-lg transition duration-150 ease-in-out ${
             loading ? 'opacity-70 cursor-not-allowed' : 'hover:shadow-xl active:translate-y-0.5'
           }`}
           style={{ background: 'linear-gradient(90deg, #a78bfa, #f472b6)' }}
@@ -175,13 +175,8 @@ const ChangePasswordScreen: React.FC<ScreenProps> = ({ showScreen, showAlert }) 
         >
           {loading ? 'Updating…' : 'Update Password'}
         </button>
-
-        {/* <p className="text-xs text-gray-500 mt-4 text-center">
-          Tip: Avoid reusing passwords and consider a password manager.
-        </p> */}
       </div>
     </div>
   );
 };
-//try
 export default ChangePasswordScreen;

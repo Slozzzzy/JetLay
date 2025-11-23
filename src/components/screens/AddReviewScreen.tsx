@@ -52,7 +52,7 @@ const StarRating: React.FC<StarRatingProps> = ({ value, onChange, label = 'Ratin
               onFocus={() => setHover(n)}
               onBlur={() => setHover(null)}
               onClick={() => onChange(n)}
-              className="p-1 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-400"
+              className="cursor-pointer p-1 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-400"
             >
               <Star
                 className={`w-7 h-7 transition-transform ${filled ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'} ${hover ? 'scale-110' : ''}`}
@@ -61,10 +61,12 @@ const StarRating: React.FC<StarRatingProps> = ({ value, onChange, label = 'Ratin
           );
         })}
         <span className="ml-2 text-sm text-gray-700">{current ? `${current}/5` : 'No rating'}</span>
+        
+        {/* ADDED FRAME TO CLEAR BUTTON */}
         <button
           type="button"
           onClick={() => onChange(0)}
-          className="ml-3 text-xs text-gray-500 underline hover:text-gray-700"
+          className="cursor-pointer ml-3 px-3 py-1 text-xs font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-800 hover:border-gray-400 transition-colors"
         >
           Clear
         </button>
@@ -135,7 +137,7 @@ const AddReviewScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
             <div className="flex items-center space-x-3">
               <label
                 htmlFor="reviewFile"
-                className="px-4 py-2 bg-gray-200 text-gray-900 font-semibold rounded-lg cursor-pointer hover:bg-gray-300"
+                className="cursor-pointer px-4 py-2 bg-gray-200 text-gray-900 font-semibold rounded-lg hover:bg-gray-300"
               >
                 Choose File
               </label>
@@ -152,7 +154,7 @@ const AddReviewScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
             </div>
           </div>
           <button
-            className={`w-full py-3 text-white font-bold rounded-xl shadow-lg transition ${
+            className={`cursor-pointer w-full py-3 text-white font-bold rounded-xl shadow-lg transition ${
               canPost ? 'opacity-100' : 'opacity-60 cursor-not-allowed'
             }`}
             style={{ background: 'linear-gradient(90deg, #d8b4fe, #fbcfe8)', color: '#1e1b4b' }}

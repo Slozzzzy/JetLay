@@ -37,13 +37,13 @@ const WelcomeChoiceScreen: React.FC<WelcomeChoiceScreenProps> = ({ showScreen })
     <div className="flex flex-col gap-4 w-full max-w-xs">
       
       <button
-        className="w-full py-3 bg-white text-gray-900 font-bold text-lg rounded-full shadow-xl hover:scale-[1.03] transition duration-200"
+        className="cursor-pointer w-full py-3 bg-white text-gray-900 font-bold text-lg rounded-full shadow-xl hover:scale-[1.03] transition duration-200"
         onClick={() => showScreen('createAccount')}
       >
         Create Account
       </button>
       <button
-        className="w-full py-3 bg-white/30 text-white font-bold text-lg rounded-full border border-white/50 backdrop-blur-sm hover:bg-white/40 hover:scale-[1.03] transition duration-200"
+        className="cursor-pointer w-full py-3 bg-white/30 text-white font-bold text-lg rounded-full border border-white/50 backdrop-blur-sm hover:bg-white/40 hover:scale-[1.03] transition duration-200"
         onClick={() => showScreen('welcomeBack')}
       >
         Log In

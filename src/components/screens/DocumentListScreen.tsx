@@ -18,7 +18,7 @@ const DocumentListScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => (
           <span className="px-3 py-1 text-xs font-semibold bg-green-100 text-green-800 rounded-full">Valid</span>
         </div>
       </div>
-      <button className="w-full mt-6 py-3 bg-yellow-400 text-gray-900 font-bold rounded-xl shadow-md hover:bg-yellow-500" onClick={() => showScreen('uploadForm')}>
+      <button className="cursor-pointer w-full mt-6 py-3 bg-yellow-400 text-gray-900 font-bold rounded-xl shadow-md hover:bg-yellow-500" onClick={() => showScreen('uploadForm')}>
         Upload New Document
       </button>
     </div>

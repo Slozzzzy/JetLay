@@ -82,7 +82,7 @@ const RoundTripCard: React.FC<{ item: RoundTrip; onSearch?: () => void }> = ({ i
         <div className="text-[15px] font-bold text-indigo-600">{formatTHB(item.priceTHB)}</div>
         <button
           onClick={onSearch}
-          className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-indigo-700 active:translate-y-px"
+          className="cursor-pointer rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-indigo-700 active:translate-y-px"
         >
           Search
         </button>
@@ -116,7 +116,7 @@ const FlightDealsSection: React.FC<{
             <p className="text-sm">
               Prices often drop mid-week. Set a reminder and we’ll nudge you when it’s cheaper.
             </p>
-            <button className="mt-3 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700 active:translate-y-px">
+            <button className="cursor-pointer mt-3 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700 active:translate-y-px">
               Create alert
             </button>
           </div>

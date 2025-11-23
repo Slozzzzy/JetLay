@@ -10,8 +10,8 @@ import {
   Sparkles,
   ChevronLeft,
   ChevronRight,
-  Sun, // Added Sun icon
-  Moon, // Added Moon icon
+  Sun,
+  Moon,
 } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
@@ -37,22 +37,20 @@ type RoundTrip = {
 
 type Destination = {
   city: string;
-  img: string; // public path under /public or remote
-  stats: string; // e.g. "12,048 accommodations"
+  img: string;
+  stats: string;
 };
 
-type Theme = 'vibrant' | 'pastel' | 'calm' | 'sunset' | 'black'; // Explicit Theme Type
+type Theme = 'vibrant' | 'pastel' | 'calm' | 'sunset' | 'black';
 
 /* ------------------------------------------------------------------ */
 /* Helpers                                                            */
 /* ------------------------------------------------------------------ */
 const formatTHB = (n: number) => `฿ ${n.toLocaleString('en-US')}`;
 
-// Helper to get initial theme from localStorage
 const getInitialTheme = (): Theme => {
   if (typeof window !== 'undefined') {
     const savedTheme = localStorage.getItem('jetlay_theme');
-    // Ensure the saved value is one of our valid Theme types, or fallback to 'vibrant'
     if (savedTheme && ['vibrant', 'pastel', 'calm', 'sunset', 'black'].includes(savedTheme)) {
       return savedTheme as Theme;
     }
@@ -60,23 +58,18 @@ const getInitialTheme = (): Theme => {
   return 'vibrant';
 };
 
-// Helper to get initial dark mode state from localStorage
 const getInitialDarkMode = (): boolean => {
   if (typeof window !== 'undefined') {
     const savedTheme = localStorage.getItem('jetlay_theme');
-    // If the last selected theme was 'black', dark mode MUST be true.
     if (savedTheme === 'black') return true; 
-
-    // Otherwise, check the explicit dark mode toggle state.
     const savedMode = localStorage.getItem('jetlay_dark_mode');
-    return savedMode === 'true'; // Defaults to false if not found
+    return savedMode === 'true';
   }
   return false;
 };
 
-
 /* ------------------------------------------------------------------ */
-/* Ad Modal (kept minimal)                                            */
+/* Ad Modal                                                           */
 /* ------------------------------------------------------------------ */
 const AdModal: React.FC<{
   open: boolean;
@@ -87,12 +80,11 @@ const AdModal: React.FC<{
   return (
     <div aria-modal role="dialog" className="fixed inset-0 z-[90] flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      {/* Dark mode support added to modal content */}
       <div className="relative mx-4 w-full max-w-md overflow-hidden rounded-3xl bg-white/90 dark:bg-gray-900/90 backdrop-blur ring-1 ring-black/10 dark:ring-white/10 shadow-[0_20px_80px_rgba(0,0,0,0.25)]">
         <div className="h-2 w-full bg-gradient-to-r from-purple-600 via-fuchsia-500 to-pink-500" />
         <button
           onClick={onClose}
-          className="absolute right-3 top-3 rounded-full bg-white/70 dark:bg-gray-700/70 p-1 text-gray-600 dark:text-gray-300 shadow ring-1 ring-black/10 hover:bg-white dark:hover:bg-gray-700"
+          className="absolute right-3 top-3 rounded-full bg-white/70 dark:bg-gray-700/70 p-1 text-gray-600 dark:text-gray-300 shadow ring-1 ring-black/10 hover:bg-white dark:hover:bg-gray-700 cursor-pointer"
           aria-label="Close"
         >
           <X className="h-5 w-5" />
@@ -125,13 +117,13 @@ const AdModal: React.FC<{
           <div className="mt-5 flex items-center gap-3">
             <button
               onClick={onCTA}
-              className="flex-1 rounded-xl bg-gradient-to-r from-purple-600 to-pink-500 px-4 py-2.5 text-center text-sm font-semibold text-white shadow hover:shadow-lg active:translate-y-px"
+              className="flex-1 rounded-xl bg-gradient-to-r from-purple-600 to-pink-500 px-4 py-2.5 text-center text-sm font-semibold text-white shadow hover:shadow-lg active:translate-y-px cursor-pointer"
             >
               Try 14 days free
             </button>
             <button
               onClick={onClose}
-              className="rounded-xl px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 ring-1 ring-black/10 dark:ring-white/10"
+              className="rounded-xl px-4 py-2.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 ring-1 ring-black/10 dark:ring-white/10 cursor-pointer"
             >
               Not now
             </button>
@@ -156,7 +148,7 @@ const LatestDealCard: React.FC<{ deal: Deal }> = ({ deal }) => (
       ring-1 ring-black/10 dark:ring-white/10 shadow-[0_6px_30px_rgba(0,0,0,0.06)] dark:shadow-[0_6px_30px_rgba(255,255,255,0.06)]
       hover:shadow-[0_12px_40px_rgba(0,0,0,0.10)] dark:hover:shadow-[0_12px_40px_rgba(255,255,255,0.10)]
       transition-all duration-300
-      p-4
+      p-4 cursor-pointer
     "
   >
     {deal.discountPct ? (
@@ -216,7 +208,7 @@ const RoundTripCard: React.FC<{ item: RoundTrip; onSearch?: () => void }> = ({ i
       <div className="text-[15px] font-bold text-indigo-600 dark:text-indigo-400">{formatTHB(item.priceTHB)}</div>
       <button
         onClick={onSearch}
-        className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white shadow hover:bg-indigo-700 hover:shadow-md active:translate-y-px ring-1 ring-indigo-700/40"
+        className="cursor-pointer rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white shadow hover:bg-indigo-700 hover:shadow-md active:translate-y-px ring-1 ring-indigo-700/40"
       >
         Search
       </button>
@@ -247,7 +239,7 @@ const DestinationsCarousel: React.FC<{
         {/* Left */}
         <button
           onClick={() => scrollBy(-320)}
-          className="absolute left-[-12px] top-1/2 z-10 -translate-y-1/2 rounded-full bg-white dark:bg-gray-700 p-2 text-gray-700 dark:text-gray-300 shadow ring-1 ring-black/10 dark:ring-white/10 hover:bg-gray-50 dark:hover:bg-gray-600"
+          className="cursor-pointer absolute left-[-12px] top-1/2 z-10 -translate-y-1/2 rounded-full bg-white dark:bg-gray-700 p-2 text-gray-700 dark:text-gray-300 shadow ring-1 ring-black/10 dark:ring-white/10 hover:bg-gray-50 dark:hover:bg-gray-600"
           aria-label="Prev"
         >
           <ChevronLeft className="h-5 w-5" />
@@ -262,7 +254,8 @@ const DestinationsCarousel: React.FC<{
             <button
               key={d.city}
               onClick={() => onSelect?.(d.city)}
-              className="group w-[300px] shrink-0 text-left"
+              // ADDED cursor-pointer HERE
+              className="cursor-pointer group w-[300px] shrink-0 text-left"
             >
               {/* Image Container */}
               <div className="overflow-hidden rounded-[22px] ring-1 ring-black/10 dark:ring-white/10 shadow-md">
@@ -287,7 +280,7 @@ const DestinationsCarousel: React.FC<{
         {/* Right */}
         <button
           onClick={() => scrollBy(320)}
-          className="absolute right-[-12px] top-1/2 z-10 -translate-y-1/2 rounded-full bg-white dark:bg-gray-700 p-2 text-gray-700 dark:text-gray-300 shadow ring-1 ring-black/10 dark:ring-white/10 hover:bg-gray-50 dark:hover:bg-gray-600"
+          className="cursor-pointer absolute right-[-12px] top-1/2 z-10 -translate-y-1/2 rounded-full bg-white dark:bg-gray-700 p-2 text-gray-700 dark:text-gray-300 shadow ring-1 ring-black/10 dark:ring-white/10 hover:bg-gray-50 dark:hover:bg-gray-600"
           aria-label="Next"
         >
           <ChevronRight className="h-5 w-5" />
@@ -308,42 +301,27 @@ const DashboardScreen: React.FC<ScreenProps> = ({
   const userName = profile?.first_name || 'Traveler';
   const mockNotificationCount = 3;
 
-  // PERSISTENCE: Initialize state from localStorage Helpers
   const [isDarkMode, setIsDarkMode] = useState(getInitialDarkMode);
   const [theme, setTheme] = useState<Theme>(getInitialTheme);
   
-  // PERSISTENCE: Save dark mode state when it changes
   useEffect(() => {
     localStorage.setItem('jetlay_dark_mode', isDarkMode.toString());
   }, [isDarkMode]);
 
-  // PERSISTENCE: Save theme state when it changes
   useEffect(() => {
     localStorage.setItem('jetlay_theme', theme);
   }, [theme]);
   
   const toggleDarkMode = () => setIsDarkMode(!isDarkMode);
 
-  // Theme backgrounds updated for deep dark mode and 'black' option
   const themeBackgrounds: Record<Theme, string> = {
-    vibrant: 'from-purple-400 via-pink-300 to-rose-300 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950', // Deeper
-    pastel: 'from-purple-200 via-pink-200 to-rose-200 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950',  // Deeper
-    calm: 'from-indigo-300 via-purple-300 to-pink-200 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900', // Deeper
-    sunset: 'from-orange-300 via-pink-300 to-rose-400 dark:from-gray-950 dark:via-black dark:to-gray-950', // Use black for maximum darkness
-    black: 'from-black via-gray-950 to-gray-900 dark:from-black dark:via-gray-950 dark:to-gray-900', // Specifically for JetLay Black
+    vibrant: 'from-purple-400 via-pink-300 to-rose-300 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950', 
+    pastel: 'from-purple-200 via-pink-200 to-rose-200 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950',  
+    calm: 'from-indigo-300 via-purple-300 to-pink-200 dark:from-gray-900 dark:via-gray-950 dark:to-gray-900', 
+    sunset: 'from-orange-300 via-pink-300 to-rose-400 dark:from-gray-950 dark:via-black dark:to-gray-950', 
+    black: 'from-black via-gray-950 to-gray-900 dark:from-black dark:via-gray-950 dark:to-gray-900', 
   };
 
-  // Mock data (unchanged)
-  const latestDeal: Deal = {
-    from: 'Chiang Mai',
-    to: 'Tsushima',
-    airline: 'China Eastern Airlines',
-    tripType: 'One way',
-    cabin: 'Economy',
-    dateText: 'Fri, Nov 21',
-    priceTHB: 9258,
-    discountPct: 33,
-  };
   const roundTrips: RoundTrip[] = [
     { days: 5, rangeText: 'Thu, Dec 11– Mon, Dec 15', fromTo: 'Hong Kong  ⇄  Tsushima', priceTHB: 11379 },
     { days: 7, rangeText: 'Tue, Jan 13– Mon, Jan 19', fromTo: 'Bangkok  ⇄  Tsushima', priceTHB: 13572 },
@@ -357,16 +335,11 @@ const DashboardScreen: React.FC<ScreenProps> = ({
     { city: 'Dubai, UAE', img: 'https://www.investindubai.gov.ae/-/media/gathercontent/poi/b/burj-khalifa/fallback-image/burj-khalifa-det-3.jpg', stats: '15,700 accommodations' },
   ];
 
-  // Ad popup state (unchanged)
-  
-
   return (
-    // Apply 'dark' class based on state. Tailwind needs this to activate dark: styles.
     <div className={`${isDarkMode ? 'dark' : ''} relative flex min-h-screen flex-col bg-gradient-to-br ${themeBackgrounds[theme]} transition-all duration-700`}>
-      {/* Decorative bg */}
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div
-          className="absolute inset-0 opacity-[0.3] dark:opacity-[0.1]" // Lower opacity for dark mode texture
+          className="absolute inset-0 opacity-[0.3] dark:opacity-[0.1]"
           style={{
             backgroundImage:
               'repeating-linear-gradient(120deg, rgba(255,255,255,0.3) 0, rgba(255,255,255,0.3) 1px, transparent 1px, transparent 16px)',
@@ -390,15 +363,13 @@ const DashboardScreen: React.FC<ScreenProps> = ({
       <div className="mx-auto w-full max-w-6xl px-4 pb-24 pt-6">
         {/* Controls */}
         <div className="mb-4 flex items-center justify-end gap-2">
-          {/* Dark Mode Toggle Button */}
           <button
             onClick={toggleDarkMode}
-            className="rounded-xl border border-gray-300 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 shadow hover:bg-gray-50 dark:hover:bg-gray-700"
+            className="cursor-pointer rounded-xl border border-gray-300 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 shadow hover:bg-gray-50 dark:hover:bg-gray-700"
             aria-label={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           >
             {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </button>
-          
           
           <select
             value={theme}
@@ -407,20 +378,18 @@ const DashboardScreen: React.FC<ScreenProps> = ({
               setTheme(selectedTheme);
               
               if (selectedTheme === 'black') {
-                // RULE: If 'black' is selected, force dark mode
                 setIsDarkMode(true);
               } else {
-                // RULE: If another theme is selected, switch dark mode off to show the light version
                 setIsDarkMode(false); 
               }
             }}
-            className="rounded-xl border border-gray-300 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 px-3 py-2 text-sm shadow outline-none focus:ring-2 focus:ring-purple-300 dark:text-gray-300"
+            className="cursor-pointer rounded-xl border border-gray-300 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 px-3 py-2 text-sm shadow outline-none focus:ring-2 focus:ring-purple-300 dark:text-gray-300"
           >
             <option value="vibrant">🎨 JetLay Vibrant</option>
             <option value="pastel">💗 Soft Pastel</option>
             <option value="calm">💜 Luxury Calm</option>
             <option value="sunset">🌅 Sunset Warm</option>
-            <option value="black">⚫ JetLay Black</option> {/* New Black Theme Option */}
+            <option value="black">⚫ JetLay Black</option>
           </select>
         </div>
 
@@ -445,7 +414,7 @@ const DashboardScreen: React.FC<ScreenProps> = ({
               </div>
               <button
                 onClick={() => showScreen('visa')}
-                className="rounded-xl bg-gradient-to-r from-purple-600 to-pink-500 px-4 py-2 font-semibold text-white shadow hover:shadow-lg active:translate-y-px"
+                className="cursor-pointer rounded-xl bg-gradient-to-r from-purple-600 to-pink-500 px-4 py-2 font-semibold text-white shadow hover:shadow-lg active:translate-y-px"
               >
                 Start a visa check
               </button>
@@ -453,7 +422,7 @@ const DashboardScreen: React.FC<ScreenProps> = ({
           </div>
         </div>
         
-        {/* Quick Actions (FIXED: Removed max-w-5xl mx-auto to use full container width) */}
+        {/* Quick Actions */}
         <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
             { label: 'New Upload', on: () => showScreen('uploadForm') },
@@ -464,14 +433,14 @@ const DashboardScreen: React.FC<ScreenProps> = ({
             <button
               key={a.label}
               onClick={a.on}
-              className="rounded-xl border border-purple-100 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm transition hover:shadow active:translate-y-px"
+              className="cursor-pointer rounded-xl border border-purple-100 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm transition hover:shadow active:translate-y-px"
             >
               {a.label}
             </button>
           ))}
         </div>
 
-        {/* Main cards (FIXED: Removed max-w-5xl mx-auto to use full container width) */}
+        {/* Main cards */}
         <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
           {[
             { id: 'visa', icon: '/visa.png', title: 'Visa Requirement', detail: 'Check country entry rules.' },
@@ -482,21 +451,18 @@ const DashboardScreen: React.FC<ScreenProps> = ({
             <div key={card.id} className="relative h-36 overflow-visible">
               <button
                 onClick={() => showScreen(card.id)}
-                // Adjusted padding to reduce vertical size and center content better
-                className="group absolute inset-0 transform-gpu rounded-2xl border border-white/70 dark:border-gray-700 bg-white/90 dark:bg-gray-800/90 px-4 py-2 shadow-md transition-all duration-300 ease-out hover:scale-105 hover:shadow-2xl focus:ring-2 focus:ring-purple-400 dark:shadow-lg"
+                // ADDED cursor-pointer HERE
+                className="cursor-pointer group absolute inset-0 transform-gpu rounded-2xl border border-white/70 dark:border-gray-700 bg-white/90 dark:bg-gray-800/90 px-4 py-2 shadow-md transition-all duration-300 ease-out hover:scale-105 hover:shadow-2xl focus:ring-2 focus:ring-purple-400 dark:shadow-lg"
               >
                 <div className="flex h-full flex-col items-center justify-center text-center">
-                  {/* Container สำหรับ Image */}
                   <div className="flex-shrink-0 flex h-12 items-center justify-center transition-transform duration-300 group-hover:scale-110">
                     <Image src={card.icon} alt={card.title} width={44} height={44} className="object-contain" />
                   </div>
                   
-                  {/* Container สำหรับ Text */}
                   <div className="flex flex-col justify-center items-center">
                     <h3 className="text-[15px] font-semibold text-gray-900 dark:text-white transition-colors group-hover:text-gray-950 dark:group-hover:text-gray-100">
                       {card.title}
                     </h3>
-                    {/* Detail text is hidden but exists for hover effect or future use */}
                     <p className="text-[12px] text-gray-500 dark:text-gray-400 opacity-0 absolute">
                       {card.detail}
                     </p>
@@ -516,62 +482,6 @@ const DashboardScreen: React.FC<ScreenProps> = ({
           />
         </section>
 
-        {/* Recently Used (FRAMED) */}
-        {/* <section className="mb-8 rounded-[22px] bg-white/70 dark:bg-gray-800/70 p-4 backdrop-blur-xl ring-1 ring-white/60 dark:ring-gray-700/60 shadow-[0_4px_30px_rgba(0,0,0,0.05)]">
-          <div className="mb-2 flex items-center justify-between">
-            <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-300">Recently used</h4>
-            <button onClick={() => showScreen('upload')} className="text-sm font-medium text-purple-600 hover:underline dark:text-purple-400">
-              View all
-            </button>
-          </div>
-          <ul className="divide-y divide-gray-200/60 dark:divide-gray-700/60">
-            {[
-              { label: 'Passport.pdf', sub: 'Uploaded • 2h ago' },
-              { label: 'Schengen Visa', sub: 'Checked • Yesterday' },
-              { label: 'Hotel Booking', sub: 'Added • 3d ago' },
-            ].map((r, i) => (
-              <li key={i} className="flex items-center justify-between py-2">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-gray-800 dark:text-gray-200">{r.label}</p>
-                  <p className="truncate text-xs text-gray-500 dark:text-gray-400">{r.sub}</p>
-                </div>
-                <button
-                  onClick={() => showScreen('upload')}
-                  className="rounded-lg px-3 py-1 text-xs font-medium text-purple-700 hover:bg-purple-50 dark:text-purple-400 dark:hover:bg-purple-900/50"
-                >
-                  Open
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section> */}
-
-        {/* Flight Deals Section (FRAMED) */}
-        {/* <section className="mb-8 rounded-[22px] bg-white/70 dark:bg-gray-800/70 p-6 backdrop-blur-xl ring-1 ring-white/60 dark:ring-gray-700/60 shadow-[0_4px_30px_rgba(0,0,0,0.05)]">
-          <h3 className="mb-1 text-2xl font-bold text-gray-900 dark:text-white">Latest Flight Deals to Tsushima</h3>
-          <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-            These are the best offers we found in the next 60 days. Don’t miss out!
-          </p>
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-            <LatestDealCard deal={latestDeal} />
-            <div className="rounded-2xl bg-emerald-50/90 dark:bg-emerald-900/60 backdrop-blur p-4 text-emerald-800 dark:text-emerald-300 ring-1 ring-emerald-200 dark:ring-emerald-700 shadow-[0_6px_30px_rgba(16,185,129,0.15)] dark:shadow-[0_6px_30px_rgba(16,185,129,0.25)]">
-              <div className="mb-1 flex items-center gap-2 font-semibold">
-                <TrendingDown className="h-4 w-4" />
-                Tip
-              </div>
-              <p className="text-sm">
-                Prices often drop mid-week. Set a reminder and we’ll nudge you when it’s cheaper.
-              </p>
-              <button
-                onClick={() => alert('Alert created ✅')}
-                className="mt-3 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700 active:translate-y-px"
-              >
-                Create alert
-              </button>
-            </div>
-          </div>
-        </section> */}
-
         {/* Round-trip Section (FRAMED) */}
         <section className="rounded-[22px] bg-white/70 dark:bg-gray-800/70 p-6 backdrop-blur-xl ring-1 ring-white/60 dark:ring-gray-700/60 shadow-[0_4px_30px_rgba(0,0,0,0.05)]">
           <h3 className="mb-1 text-2xl font-bold text-gray-900 dark:text-white">Round-trip flights to Tsushima</h3>
@@ -583,8 +493,6 @@ const DashboardScreen: React.FC<ScreenProps> = ({
           </div>
         </section>
       </div>
-
-      
     </div>
   );
 };
