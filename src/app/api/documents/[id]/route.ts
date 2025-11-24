@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseServer';
+import { updateCalendarEventForDocument, deleteCalendarEvent } from '@/lib/googleCalendar';
+
 
 type RouteParams = {
   params: Promise<{ id: string }>;
@@ -32,6 +34,10 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: 'Document not found' }, { status: 404 });
   }
 
+  //Delete calendar event if exists
+  if (doc.google_calendar_event_id) {
+    await deleteCalendarEvent(doc.google_calendar_event_id);
+  }
   // 2) Delete from storage (ignore "not found")
   if (doc.storage_path) {
     const { error: storageError } = await supabase.storage
@@ -134,6 +140,14 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       { error: 'Failed to update document' },
       { status: 500 }
     );
+  }
+  if (data.google_calendar_event_id && data.expiry_date) {
+    await updateCalendarEventForDocument(data.google_calendar_event_id, {
+      id: data.id,
+      title: data.title,
+      expiry_date: data.expiry_date,
+      document_type: data.document_type,
+    });
   }
 
   return NextResponse.json(data);
