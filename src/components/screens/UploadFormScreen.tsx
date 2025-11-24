@@ -213,7 +213,7 @@ const UploadFormScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
             </label>
             <input
               type="file"
-              className="w-full text-sm"
+              className="w-full text-sm bg-gray-50 px-3 py-1 rounded-2xl hover:cursor-pointer"
               onChange={(e) => setFile(e.target.files?.[0] || null)}
             />
           </div>

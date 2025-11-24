@@ -40,9 +40,10 @@ const Header: React.FC<HeaderProps> = ({
       <Image
         width={40}
         height={40}
-        className="rounded-lg"
+        className="rounded-lg hover:cursor-pointer hover:bg-gray-100 p-1"
         src="/raw-removebg-preview.png"
         alt="JETLAY Logo"
+        onClick={() => showScreen("dashboard")}
       />
       <h2 className="text-2xl font-semibold text-gray-900 m-0">{title}</h2>
     </div>
