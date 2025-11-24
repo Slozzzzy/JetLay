@@ -1,16 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import Header from '@/components/core/Header';
 import { ScreenProps } from '@/types';
+import { supabase } from '@/lib/supabaseClient';
 
 type DocumentStatus = 'valid' | 'expiring' | 'expired';
 
 interface DocumentItem {
   id: string;
   title: string;
-  expiry_date: string;
+  expiry_date: string | null;
   document_type: string;
   status: DocumentStatus;
   url: string | null;
+  storage_path: string | null; // ⬅️ we now have this from API
 }
 
 const statusStyles: Record<
@@ -31,15 +33,21 @@ const DocumentListScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!profile?.id) return;
+  // Edit modal state
+  const [editingDoc, setEditingDoc] = useState<DocumentItem | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editExpiryDate, setEditExpiryDate] = useState('');
+  const [editFile, setEditFile] = useState<File | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
-    const fetchDocuments = async () => {
+  const fetchDocuments = useCallback(
+    async (userId: string) => {
       try {
         setLoading(true);
         setError(null);
 
-        const res = await fetch(`/api/documents?userId=${profile.id}`);
+        const res = await fetch(`/api/documents?userId=${userId}`);
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
           const message =
@@ -61,10 +69,14 @@ const DocumentListScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
       } finally {
         setLoading(false);
       }
-    };
+    },
+    []
+  );
 
-    fetchDocuments();
-  }, [profile]);
+  useEffect(() => {
+    if (!profile?.id) return;
+    fetchDocuments(profile.id);
+  }, [profile?.id, fetchDocuments]);
 
   // 🗑️ Delete handler
   const handleDelete = async (id: string) => {
@@ -96,6 +108,84 @@ const DocumentListScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
       const message =
         err instanceof Error ? err.message : 'Failed to delete document';
       alert(message);
+    }
+  };
+
+  // ✏️ Start editing
+  const startEdit = (doc: DocumentItem) => {
+    setEditingDoc(doc);
+    setEditTitle(doc.title);
+    setEditExpiryDate(doc.expiry_date || '');
+    setEditFile(null);
+    setEditError(null);
+  };
+
+  // 💾 Save edit (metadata + optional new file)
+  const handleSaveEdit = async () => {
+    if (!profile?.id || !editingDoc) return;
+
+    try {
+      setSavingEdit(true);
+      setEditError(null);
+
+      let newStoragePath = editingDoc.storage_path;
+
+      // If user picked a new file → upload to Supabase and get new storagePath
+      if (editFile) {
+        const userId = profile.id;
+        const safeFileName = editFile.name.replace(/\s+/g, '_');
+        newStoragePath = `${userId}/${crypto.randomUUID()}/${safeFileName}`;
+
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('documents')
+          .upload(newStoragePath, editFile, {
+            upsert: false,
+          });
+
+        if (uploadError) {
+          console.error('Replace upload error =>', uploadError);
+          throw new Error(uploadError.message || 'File upload failed');
+        }
+
+        console.log('✅ replace upload finished =>', uploadData);
+      }
+
+      // Call PATCH API to update document
+      const res = await fetch(
+        `/api/documents/${editingDoc.id}?userId=${profile.id}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: editTitle,
+            expiryDate: editExpiryDate,
+            // keep same document_type for now; you can add a field if you want to edit it
+            storagePath: newStoragePath,
+          }),
+        }
+      );
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const message =
+          typeof data === 'object' && data && 'error' in data
+            ? (data as { error?: string }).error
+            : undefined;
+        throw new Error(message || 'Failed to update document');
+      }
+
+      // Refresh from server so status + signedUrl are correct
+      await fetchDocuments(profile.id);
+      setEditingDoc(null);
+    } catch (err) {
+      console.error('❗ handleSaveEdit error =>', err);
+      if (err instanceof Error) {
+        setEditError(err.message || 'Something went wrong');
+      } else {
+        setEditError('Something went wrong');
+      }
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -139,7 +229,7 @@ const DocumentListScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
                 <div className="flex flex-col">
                   <strong className="text-gray-900">{doc.title}</strong>
                   <span className={`text-sm mt-1 ${dateColor}`}>
-                    • Expires: {doc.expiry_date}
+                    • Expires: {doc.expiry_date || 'N/A'}
                   </span>
                   {doc.url && (
                     <button
@@ -163,6 +253,13 @@ const DocumentListScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
                   </span>
 
                   <button
+                    onClick={() => startEdit(doc)}
+                    className="text-xs text-blue-600 hover:text-blue-800 underline"
+                  >
+                    Edit
+                  </button>
+
+                  <button
                     onClick={() => handleDelete(doc.id)}
                     className="text-xs text-red-600 hover:text-red-800 underline"
                   >
@@ -181,6 +278,82 @@ const DocumentListScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
           Upload New Document
         </button>
       </div>
+
+      {/* ✏️ Edit Modal */}
+      {editingDoc && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md border border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">
+              Edit Document
+            </h2>
+
+            {editError && (
+              <p className="text-red-600 text-sm mb-2">{editError}</p>
+            )}
+
+            <div className="space-y-3">
+              {/* Title */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Document Name
+                </label>
+                <input
+                  type="text"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                />
+              </div>
+
+              {/* Expiry date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Expiry Date
+                </label>
+                <input
+                  type="date"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                  value={editExpiryDate || ''}
+                  onChange={(e) => setEditExpiryDate(e.target.value)}
+                />
+              </div>
+
+              {/* Optional new file */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Replace File (optional)
+                </label>
+                <input
+                  type="file"
+                  className="w-full text-sm"
+                  onChange={(e) => setEditFile(e.target.files?.[0] || null)}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Leave this empty if you only want to change the name or expiry
+                  date.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 mt-5">
+              <button
+                className="px-3 py-2 text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100"
+                onClick={() => setEditingDoc(null)}
+                disabled={savingEdit}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-4 py-2 text-sm rounded-lg bg-yellow-400 text-gray-900 font-semibold hover:bg-yellow-500 disabled:opacity-60"
+                onClick={handleSaveEdit}
+                disabled={savingEdit}
+              >
+                {savingEdit ? 'Saving...' : 'Save changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
