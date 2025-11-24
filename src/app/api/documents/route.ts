@@ -1,7 +1,9 @@
 // src/app/api/documents/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseServer';
-import { computeStatus } from '@/lib/documentStatus'; // ⬅️ default import
+import { computeStatus } from '@/lib/documentStatus'; 
+import { createCalendarEventForDocument } from '@/lib/googleCalendar';
+
 
 // Keep this in sync with your DB schema
 interface DocumentRow {
@@ -12,6 +14,7 @@ interface DocumentRow {
   document_type: string;
   storage_path: string | null;
   created_at: string;
+  google_calendar_event_id?: string | null;
 }
 
 type DocumentStatus = 'valid' | 'expiring' | 'expired';
@@ -142,5 +145,23 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // 👇 NEW: create event in Google Calendar
+  const eventId = await createCalendarEventForDocument({
+    id: data.id,
+    title: data.title,
+    expiry_date: data.expiry_date,
+    document_type: data.document_type,
+  });
+
+  if (eventId) {
+    await supabase
+      .from('documents')
+      .update({ google_calendar_event_id: eventId })
+      .eq('id', data.id);
+  }
+
   return NextResponse.json(data, { status: 201 });
 }
+
+
+
