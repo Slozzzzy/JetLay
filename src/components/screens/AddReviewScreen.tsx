@@ -31,6 +31,7 @@ const StarRating: React.FC<StarRatingProps> = ({ value, onChange, label = 'Ratin
   return (
     <div className="mb-5">
       <label className="block text-sm font-semibold text-gray-900 mb-2">{label}</label>
+
       <div
         role="radiogroup"
         aria-label={label}
@@ -55,16 +56,32 @@ const StarRating: React.FC<StarRatingProps> = ({ value, onChange, label = 'Ratin
               className="p-1 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-400"
             >
               <Star
-                className={`w-7 h-7 transition-transform ${filled ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'} ${hover ? 'scale-110' : ''}`}
+                className={`w-7 h-7 transition-transform ${
+                  filled ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
+                } ${hover ? 'scale-110' : ''}`}
               />
             </button>
           );
         })}
-        <span className="ml-2 text-sm text-gray-700">{current ? `${current}/5` : 'No rating'}</span>
+
+        <span className="ml-2 text-sm text-gray-700">
+          {current ? `${current}/5` : 'No rating'}
+        </span>
+
+        {/* 🔥 Updated CLEAR BUTTON (with border) */}
         <button
           type="button"
           onClick={() => onChange(0)}
-          className="ml-3 text-xs text-gray-500 underline hover:text-gray-700"
+          className="
+            ml-3 px-3 py-1.5
+            text-xs font-medium
+            text-gray-600
+            border border-gray-300
+            rounded-lg
+            hover:border-purple-400
+            hover:text-purple-600
+            transition-all
+          "
         >
           Clear
         </button>
@@ -83,9 +100,7 @@ const AddReviewScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
   const canPost = title.trim().length > 0 && experience.trim().length > 0 && rating > 0;
 
   const handlePost = () => {
-    // TODO: send to your backend/Supabase here
-    // Example payload:
-    // { title, experience, mapLink, rating, files }
+    // TODO: send to backend
     showScreen('reviews');
   };
 
@@ -98,8 +113,11 @@ const AddReviewScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
         showScreen={showScreen}
         profile={profile}
       />
+
       <div className="p-6 flex-1 max-w-md mx-auto w-full">
         <div className="bg-white p-8 rounded-2xl shadow-xl">
+          
+          {/* Title */}
           <div className="mb-5">
             <input
               type="text"
@@ -110,9 +128,10 @@ const AddReviewScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
             />
           </div>
 
-          {/* ⭐ New star rating */}
+          {/* ⭐ Star Rating */}
           <StarRating value={rating} onChange={setRating} label="Your rating" />
 
+          {/* Experience */}
           <div className="mb-5">
             <textarea
               value={experience}
@@ -121,6 +140,8 @@ const AddReviewScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
               className="w-full p-3 border border-gray-300 rounded-lg min-h-[150px]"
             />
           </div>
+
+          {/* Map Link */}
           <div className="mb-5">
             <input
               type="url"
@@ -130,8 +151,13 @@ const AddReviewScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
               className="w-full p-3 border border-gray-300 rounded-lg h-12"
             />
           </div>
+
+          {/* File Upload */}
           <div className="mb-6">
-            <label className="block text-sm font-semibold text-gray-900 mb-2">Attach photos</label>
+            <label className="block text-sm font-semibold text-gray-900 mb-2">
+              Attach photos
+            </label>
+
             <div className="flex items-center space-x-3">
               <label
                 htmlFor="reviewFile"
@@ -139,6 +165,7 @@ const AddReviewScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
               >
                 Choose File
               </label>
+
               <input
                 type="file"
                 multiple
@@ -146,21 +173,28 @@ const AddReviewScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
                 className="hidden"
                 onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
               />
+
               <span className="text-sm text-gray-500">
                 {files.length ? `${files.length} file(s) selected` : 'No file chosen'}
               </span>
             </div>
           </div>
+
+          {/* Submit */}
           <button
             className={`w-full py-3 text-white font-bold rounded-xl shadow-lg transition ${
               canPost ? 'opacity-100' : 'opacity-60 cursor-not-allowed'
             }`}
-            style={{ background: 'linear-gradient(90deg, #d8b4fe, #fbcfe8)', color: '#1e1b4b' }}
+            style={{
+              background: 'linear-gradient(90deg, #d8b4fe, #fbcfe8)',
+              color: '#1e1b4b'
+            }}
             onClick={handlePost}
             disabled={!canPost}
           >
             Post Review
           </button>
+
         </div>
       </div>
     </div>
