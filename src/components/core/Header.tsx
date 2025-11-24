@@ -1,6 +1,7 @@
 // src/components/core/Header.tsx
 import React from 'react';
 import Image from 'next/image';
+import { ChevronLeft } from 'lucide-react'; // Added icon for better look
 import type { Profile } from '@/types';
 
 type HeaderProps = {
@@ -29,32 +30,37 @@ const Header: React.FC<HeaderProps> = ({
 }) => (
   <header className="relative flex items-center justify-between p-4 bg-white border-b border-gray-200 shadow-md sticky top-0 z-50">
     
-    {/* Left Side (Unchanged) */}
-    <div className="flex items-center gap-3">
+    {/* Left Side */}
+    <div className="flex items-center gap-2">
+      {/* --- EXPANDED BACK BUTTON --- */}
       <button
-        className="text-xl font-bold text-gray-500 hover:text-gray-700 transition"
+        className="group flex items-center justify-center w-11 h-11 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-all active:scale-95"
         onClick={onBack}
+        aria-label="Go Back"
       >
-        &larr;
+        <ChevronLeft className="w-8 h-8 relative right-[1px]" />
       </button>
-      <Image
-        width={40}
-        height={40}
-        className="rounded-lg"
-        src="/raw-removebg-preview.png"
-        alt="JETLAY Logo"
-      />
-      <h2 className="text-2xl font-semibold text-gray-900 m-0">{title}</h2>
+
+      <div className="flex items-center gap-3 ml-1">
+        <Image
+          width={40}
+          height={40}
+          className="rounded-lg"
+          src="/raw-removebg-preview.png"
+          alt="JETLAY Logo"
+        />
+        <h2 className="text-2xl font-semibold text-gray-900 m-0">{title}</h2>
+      </div>
     </div>
 
-    {/* --- MODIFIED Right Side Icons --- */}
-    <div className="flex items-center gap-4">
+    {/* Right Side Icons */}
+    <div className="flex items-center gap-3">
       
-      {/* --- ADDED Notification Icon --- */}
+      {/* Notification Icon */}
       {showNotificationIcon && (
         <button
-          onClick={onNotificationClick} // This will trigger the state in App.tsx
-          className="relative flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 shadow-md cursor-pointer hover:bg-gray-200 transition"
+          onClick={onNotificationClick}
+          className="relative flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 shadow-md cursor-pointer hover:bg-gray-200 transition active:scale-95"
           aria-label="Notifications"
         >
           <span className="text-xl">🔔</span> 
@@ -64,11 +70,11 @@ const Header: React.FC<HeaderProps> = ({
         </button>
       )}
   
-      {/* Profile Icon (Unchanged) */}
+      {/* Profile Icon */}
       {showProfileIcon && (
         <button
           onClick={() => showScreen("user")}
-          className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 shadow-md cursor-pointer hover:bg-gray-200 transition overflow-hidden"
+          className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 shadow-md cursor-pointer hover:bg-gray-200 transition overflow-hidden active:scale-95"
           aria-label="User Profile"
         >
           {profile?.avatar_url ? (
