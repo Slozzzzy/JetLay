@@ -46,11 +46,9 @@ const UploadFormScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
       setSubmitting(true);
 
       const userId = profile.id;
-
       const safeFileName = file.name.replace(/\s+/g, '_');
       const storagePath = `${userId}/${crypto.randomUUID()}/${safeFileName}`;
 
-      // timeout controller
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 60000);
 
@@ -58,7 +56,7 @@ const UploadFormScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
         .from('documents')
         .upload(storagePath, file, {
           upsert: false,
-          // @ts-ignore
+          // @ts-expect-error – supabase-js v2 accepts signal
           signal: controller.signal,
         });
 
@@ -93,7 +91,6 @@ const UploadFormScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
       else setError('Something went wrong');
     } finally {
       setSubmitting(false);
-      console.log('⏹ handleSubmit end');
     }
   };
 
@@ -102,7 +99,7 @@ const UploadFormScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
       <Header
         title="Upload Document"
         onBack={() => showScreen('upload')}
-        showProfileIcon={true}
+        showProfileIcon
         showScreen={showScreen}
         profile={profile}
       />
@@ -120,7 +117,7 @@ const UploadFormScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
               Document Type
             </label>
             <select
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm h-12"
               value={documentType}
               onChange={(e) => setDocumentType(e.target.value)}
             >
@@ -139,7 +136,7 @@ const UploadFormScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
             </label>
             <input
               type="text"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm h-12"
               placeholder="e.g. Main passport, Schengen visa"
               value={documentName}
               onChange={(e) => setDocumentName(e.target.value)}
@@ -153,25 +150,28 @@ const UploadFormScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
             </label>
             <input
               type="date"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm h-12"
               value={expiryDate}
               onChange={(e) => setExpiryDate(e.target.value)}
             />
           </div>
 
-          {/* File input — styled box */}
+          {/* File input — BEAUTIFUL BOX */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Document File
             </label>
 
-            <label className="block cursor-pointer">
+            <label className="block cursor-pointer w-full">
               <div
                 className="
+                  w-full h-12
                   flex items-center justify-between 
-                  w-full px-4 py-3
-                  rounded-xl border border-gray-300
-                  bg-white shadow-sm
+                  px-3
+                  border border-gray-300 
+                  rounded-lg 
+                  bg-white 
+                  shadow-sm
                   hover:border-purple-400 hover:shadow-md
                   transition-all
                 "
@@ -193,10 +193,17 @@ const UploadFormScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
             </label>
           </div>
 
+          {/* Submit */}
           <button
             type="submit"
             disabled={submitting}
-            className="w-full mt-2 py-3 bg-yellow-400 text-gray-900 font-bold rounded-xl shadow-md hover:bg-yellow-500 disabled:opacity-60"
+            className="
+              w-full mt-2 py-3 
+              bg-yellow-400 text-gray-900 font-bold 
+              rounded-xl shadow-md 
+              hover:bg-yellow-500 
+              disabled:opacity-60
+            "
           >
             {submitting ? 'Saving...' : 'Save Document'}
           </button>
