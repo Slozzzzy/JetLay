@@ -3,14 +3,15 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Header from "@/components/core/Header";
 import { ScreenProps } from "@/types";
-import {
-  Plane,
-  ArrowRight,
-} from "lucide-react";
+import { Plane, ArrowRight } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                              */
 /* ------------------------------------------------------------------ */
+interface DashboardScreenProps extends ScreenProps {
+  notificationCount: number;
+}
+
 type Deal = {
   from: string;
   to: string;
@@ -70,7 +71,7 @@ const themeBackgrounds: Record<Theme, string> = {
 };
 
 /* ------------------------------------------------------------------ */
-/* Latest Deal Card                                                   */
+/* (Optional) Latest Deal Card – safe to remove if unused             */
 /* ------------------------------------------------------------------ */
 const LatestDealCard: React.FC<{ deal: Deal }> = ({ deal }) => (
   <div className="relative rounded-2xl bg-white/85 backdrop-blur ring-1 ring-black/10 shadow hover:shadow-lg transition-all duration-300 p-4 cursor-pointer">
@@ -117,15 +118,21 @@ const RoundTripCard: React.FC<{ item: RoundTrip; onSearch?: () => void }> = ({
 }) => (
   <div className="rounded-2xl bg-white/85 backdrop-blur ring-1 ring-black/10 shadow hover:shadow-lg transition-all duration-300 p-4">
     <div className="mb-2 flex items-baseline gap-2">
-      <div className="text-3xl font-extrabold text-indigo-600 drop-shadow-sm">{item.days}</div>
+      <div className="text-3xl font-extrabold text-indigo-600 drop-shadow-sm">
+        {item.days}
+      </div>
       <div className="text-sm font-semibold text-indigo-400">Day Trip</div>
     </div>
 
-    <div className="mb-1 text-[15px] font-semibold text-gray-900">{item.rangeText}</div>
+    <div className="mb-1 text-[15px] font-semibold text-gray-900">
+      {item.rangeText}
+    </div>
     <div className="mb-4 text-sm text-gray-500">{item.fromTo}</div>
 
     <div className="flex items-center justify-between">
-      <div className="text-[15px] font-bold text-indigo-600">{formatTHB(item.priceTHB)}</div>
+      <div className="text-[15px] font-bold text-indigo-600">
+        {formatTHB(item.priceTHB)}
+      </div>
       <button
         onClick={onSearch}
         className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white shadow hover:bg-indigo-700 hover:shadow-md active:translate-y-px"
@@ -139,22 +146,18 @@ const RoundTripCard: React.FC<{ item: RoundTrip; onSearch?: () => void }> = ({
 /* ------------------------------------------------------------------ */
 /* Travel News List Component                                         */
 /* ------------------------------------------------------------------ */
-const TravelNewsList: React.FC<{
-  items: TravelNewsItem[];
-}> = ({ items }) => {
+const TravelNewsList: React.FC<{ items: TravelNewsItem[] }> = ({ items }) => {
   const [showAll, setShowAll] = useState(false);
 
-  // If showAll is true, show everything. Otherwise, take first 4.
   const displayedItems = showAll ? items : items.slice(0, 4);
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-2xl font-bold text-gray-900">Travel Updates</h3>
-        
-        {/* Only show the toggle button if there are more than 4 items */}
+
         {items.length > 4 && (
-          <button 
+          <button
             onClick={() => setShowAll(!showAll)}
             className="text-sm text-indigo-600 font-medium hover:underline focus:outline-none"
           >
@@ -165,7 +168,7 @@ const TravelNewsList: React.FC<{
 
       <div className="flex flex-col gap-3">
         {displayedItems.map((news) => (
-          <a 
+          <a
             key={news.id}
             href={news.sourceUrl}
             target="_blank"
@@ -173,24 +176,19 @@ const TravelNewsList: React.FC<{
             className="group block p-4 rounded-2xl bg-white/50 hover:bg-white/90 transition-all duration-300 ring-1 ring-black/5 hover:shadow-md cursor-pointer"
           >
             <div className="flex flex-col">
-              {/* Header: Source & Date */}
               <div className="flex items-center justify-between mb-1.5">
-                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">
-                    {news.source}
-                 </span>
-                 <span className="text-[11px] text-gray-400">
-                    {news.date}
-                 </span>
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                  {news.source}
+                </span>
+                <span className="text-[11px] text-gray-400">{news.date}</span>
               </div>
-              
-              {/* Title */}
+
               <h4 className="text-lg font-bold text-[#1a0dab] group-hover:text-indigo-600 group-hover:underline decoration-indigo-300 underline-offset-2 mb-1.5">
                 {news.title}
               </h4>
-              
-              {/* Snippet */}
+
               <div className="text-[13px] text-gray-600 leading-relaxed">
-                 {news.snippet}
+                {news.snippet}
               </div>
             </div>
           </a>
@@ -203,13 +201,13 @@ const TravelNewsList: React.FC<{
 /* ------------------------------------------------------------------ */
 /* Main Dashboard                                                     */
 /* ------------------------------------------------------------------ */
-const DashboardScreen: React.FC<ScreenProps> = ({
+const DashboardScreen: React.FC<DashboardScreenProps> = ({
   showScreen,
   profile,
   handleNotificationClick,
+  notificationCount,
 }) => {
-  const userName = profile?.first_name || "Auto";
-  const mockNotificationCount = 3;
+  const userName = profile?.first_name || "User";
   const [theme, setTheme] = useState<Theme>(getInitialTheme);
 
   useEffect(() => {
@@ -237,9 +235,6 @@ const DashboardScreen: React.FC<ScreenProps> = ({
     },
   ];
 
-  /* ------------------------------------------------------------------ */
-  /* Travel News Data                                                   */
-  /* ------------------------------------------------------------------ */
   const travelNewsData: TravelNewsItem[] = [
     {
       id: "1",
@@ -249,7 +244,11 @@ const DashboardScreen: React.FC<ScreenProps> = ({
       date: "1 hour ago",
       snippet: (
         <>
-          Citizens of the USA <span className="text-pink-600 font-medium">must have a valid US passport</span> or other valid travel document that allows entry to the USA.
+          Citizens of the USA{" "}
+          <span className="text-pink-600 font-medium">
+            must have a valid US passport
+          </span>{" "}
+          or other valid travel document that allows entry to the USA.
         </>
       ),
     },
@@ -261,7 +260,12 @@ const DashboardScreen: React.FC<ScreenProps> = ({
       date: "12 Aug 2025",
       snippet: (
         <>
-          Thailand has introduced a <span className="text-pink-600 font-medium">mandatory Digital Arrival Card (TDAC)</span> for all foreign visitors – including those entering under visa exemption.
+          Thailand has introduced a{" "}
+          <span className="text-pink-600 font-medium">
+            mandatory Digital Arrival Card (TDAC)
+          </span>{" "}
+          for all foreign visitors – including those entering under visa
+          exemption.
         </>
       ),
     },
@@ -273,7 +277,12 @@ const DashboardScreen: React.FC<ScreenProps> = ({
       date: "Just now",
       snippet: (
         <>
-          Refugees and stateless persons often do not have national passports. In this case, a <span className="text-pink-600 font-medium">travel document can help them travel internationally</span>.
+          Refugees and stateless persons often do not have national passports.
+          In this case, a{" "}
+          <span className="text-pink-600 font-medium">
+            travel document can help them travel internationally
+          </span>
+          .
         </>
       ),
     },
@@ -285,7 +294,11 @@ const DashboardScreen: React.FC<ScreenProps> = ({
       date: "28 Oct 2025",
       snippet: (
         <>
-           Use this form to <span className="text-pink-600 font-medium">apply for travel documents</span>, parole documents, or arrival/departure records.
+          Use this form to{" "}
+          <span className="text-pink-600 font-medium">
+            apply for travel documents
+          </span>
+          , parole documents, or arrival/departure records.
         </>
       ),
     },
@@ -297,7 +310,12 @@ const DashboardScreen: React.FC<ScreenProps> = ({
       date: "2 hours ago",
       snippet: (
         <>
-          An international traveling passenger is responsible for <span className="text-pink-600 font-medium">preparing and checking validity of your passport and other travel documents</span>.
+          An international traveling passenger is responsible for{" "}
+          <span className="text-pink-600 font-medium">
+            preparing and checking validity of your passport and other travel
+            documents
+          </span>
+          .
         </>
       ),
     },
@@ -309,7 +327,11 @@ const DashboardScreen: React.FC<ScreenProps> = ({
       date: "5 hours ago",
       snippet: (
         <>
-          Passports of individuals traveling overseas must have a <span className="text-pink-600 font-medium">validity of more than 6 months</span>. An exception may be made depending on the country...
+          Passports of individuals traveling overseas must have a{" "}
+          <span className="text-pink-600 font-medium">
+            validity of more than 6 months
+          </span>
+          . An exception may be made depending on the country...
         </>
       ),
     },
@@ -321,7 +343,11 @@ const DashboardScreen: React.FC<ScreenProps> = ({
       date: "29 Oct 2025",
       snippet: (
         <>
-          <span className="text-pink-600 font-medium">FCDO travel advice for Thailand</span>. Includes safety and security, insurance, entry requirements and legal differences.
+          <span className="text-pink-600 font-medium">
+            FCDO travel advice for Thailand
+          </span>
+          . Includes safety and security, insurance, entry requirements and
+          legal differences.
         </>
       ),
     },
@@ -333,7 +359,11 @@ const DashboardScreen: React.FC<ScreenProps> = ({
       date: "7 months ago",
       snippet: (
         <>
-          When traveling on domestic flights within Thailand, <span className="text-pink-600 font-medium">non-Thai passengers are required to present a boarding pass</span> along with one of the following...
+          When traveling on domestic flights within Thailand,{" "}
+          <span className="text-pink-600 font-medium">
+            non-Thai passengers are required to present a boarding pass
+          </span>{" "}
+          along with one of the following...
         </>
       ),
     },
@@ -354,26 +384,23 @@ const DashboardScreen: React.FC<ScreenProps> = ({
       </div>
 
       <Header
-        title="JetLay"  /* CHANGED: Replaced `Hello, ${userName}` with "JetLay" */
+        title="JetLay"
         onBack={() => {}}
         showProfileIcon
         showScreen={showScreen}
         profile={profile}
         showNotificationIcon
-        notificationCount={mockNotificationCount}
+        notificationCount={notificationCount}
         onNotificationClick={handleNotificationClick}
       />
 
       <div className="mx-auto w-full max-w-6xl px-4 pb-24 pt-6">
         {/* Hero banner */}
         <div className="mb-6 rounded-[26px] bg-white/80 backdrop-blur-xl ring-1 ring-white/70 shadow-[inset_0_0_0.5px_rgba(255,255,255,0.9),0_12px_28px_rgba(17,24,39,0.08)]">
-          {/* เปลี่ยน p-5 เป็น p-8 เพื่อเพิ่มพื้นที่ว่างรอบๆ */}
           <div className="p-8">
-            {/* เปลี่ยน text-2xl เป็น text-3xl */}
             <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight mb-2">
               Welcome back, {userName} 👋
             </h2>
-            {/* เปลี่ยน text-[15px] เป็น text-lg (ใหญ่ขึ้นนิดหน่อยให้อ่านง่าย) */}
             <p className="text-lg text-slate-700">
               Plan, upload, and manage your journey effortlessly.
             </p>
@@ -383,49 +410,28 @@ const DashboardScreen: React.FC<ScreenProps> = ({
         {/* Main cards */}
         <div className="mb-8 grid grid-cols-2 gap-5 sm:grid-cols-4">
           {[
-            {
-              id: "visa",
-              icon: "/visa.png",
-              title: "Visa Requirement",
-            },
-            {
-              id: "upload",
-              icon: "/document.png",
-              title: "Document Upload",
-            },
-            {
-              id: "calendar",
-              icon: "/calendar.png",
-              title: "Calendar",
-            },
-            {
-              id: "reviews",
-              icon: "/review.png",
-              title: "Traveler Reviews",
-            },
+            { id: "visa", icon: "/visa.png", title: "Visa Requirement" },
+            { id: "upload", icon: "/document.png", title: "Document Upload" },
+            { id: "calendar", icon: "/calendar.png", title: "Calendar" },
+            { id: "reviews", icon: "/review.png", title: "Traveler Reviews" },
           ].map((card) => (
-            /* 1. เพิ่มความสูงการ์ดจาก h-36 เป็น h-48 */
             <div key={card.id} className="relative h-48 overflow-visible">
               <button
                 onClick={() => showScreen(card.id)}
-                /* 2. เพิ่มความโค้งมนเป็น rounded-[26px] และเพิ่ม Padding */
                 className="group absolute inset-0 rounded-[26px] border border-white/70 bg-white/95 p-4 shadow-md transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:bg-white"
               >
                 <div className="flex h-full flex-col items-center justify-center text-center">
-                  
-                  {/* 3. ขยายพื้นที่รอบไอคอน และเพิ่มระยะห่างด้านล่าง (mb-4) */}
                   <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-slate-50 transition-transform duration-300 group-hover:scale-110 group-hover:bg-indigo-50">
                     <Image
                       src={card.icon}
                       alt={card.title}
-                      width={56}  /* 4. ขยายขนาดไอคอน (จาก 44 เป็น 56) */
+                      width={56}
                       height={56}
                       className="object-contain drop-shadow-sm"
                     />
                   </div>
 
                   <div className="flex flex-col justify-center items-center px-2">
-                    {/* 5. ขยายตัวหนังสือเป็น text-lg และเพิ่มความหนา */}
                     <h3 className="text-lg font-bold text-slate-800 group-hover:text-indigo-700">
                       {card.title}
                     </h3>
