@@ -20,7 +20,7 @@ const DashboardScreen: React.FC<ScreenProps> = ({
   const mockNotificationCount = 3;
 
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-br from-purple-200 via-pink-200 to-rose-200">
+    <div className="flex flex-col min-h-screen bg-pink-200">
       <Header
         title={`Hello, ${userName}`}
         onBack={() => {}}
