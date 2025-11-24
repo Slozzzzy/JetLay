@@ -24,7 +24,7 @@ export async function DELETE(
   const { data: doc, error: docError } = await supabase
     .from('documents')
     .select('*')
-    .eq('id', id)                   // ✅ use id, not params.id
+    .eq('id', id)                   
     .single();
 
   if (docError || !doc) {

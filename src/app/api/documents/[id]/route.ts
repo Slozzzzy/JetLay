@@ -1,4 +1,3 @@
-// src/app/api/documents/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabaseServer';
 
@@ -6,12 +5,9 @@ type RouteParams = {
   params: Promise<{ id: string }>;
 };
 
-export async function DELETE(
-  req: NextRequest,
-  { params }: RouteParams
-) {
-  const { id: docId } = await params;        
-  const supabase = supabaseServer;          
+export async function DELETE(req: NextRequest, { params }: RouteParams) {
+  const { id: docId } = await params;
+  const supabase = supabaseServer;
   const { searchParams } = new URL(req.url);
   const userId = searchParams.get('userId');
 
@@ -66,4 +62,79 @@ export async function DELETE(
   }
 
   return NextResponse.json({ success: true });
+}
+
+// PATCH /api/documents/[id]?userId=xxxx
+// Used to update metadata + (optionally) storage_path for file replace
+export async function PATCH(req: NextRequest, { params }: RouteParams) {
+  const { id: docId } = await params;
+  const supabase = supabaseServer;
+  const { searchParams } = new URL(req.url);
+  const userId = searchParams.get('userId');
+
+  if (!docId) {
+    return NextResponse.json({ error: 'Missing document id' }, { status: 400 });
+  }
+
+  if (!userId) {
+    return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
+  }
+
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  if (typeof body !== 'object' || body === null) {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+  }
+
+  const { title, expiryDate, documentType, storagePath } = body as {
+    title?: string;
+    expiryDate?: string | null;
+    documentType?: string;
+    storagePath?: string | null;
+  };
+
+  const updates: Record<string, unknown> = {};
+
+  if (typeof title === 'string') {
+    updates.title = title;
+  }
+  if (typeof expiryDate === 'string' || expiryDate === null) {
+    updates.expiry_date = expiryDate;
+  }
+  if (typeof documentType === 'string') {
+    updates.document_type = documentType;
+  }
+  if (typeof storagePath === 'string' || storagePath === null) {
+    updates.storage_path = storagePath;
+  }
+
+  if (Object.keys(updates).length === 0) {
+    return NextResponse.json(
+      { error: 'No fields to update' },
+      { status: 400 }
+    );
+  }
+
+  const { data, error } = await supabase
+    .from('documents')
+    .update(updates)
+    .eq('id', docId)
+    .eq('user_id', userId)
+    .select()
+    .single();
+
+  if (error || !data) {
+    console.error('Update document error:', error);
+    return NextResponse.json(
+      { error: 'Failed to update document' },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json(data);
 }
