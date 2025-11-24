@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
       email: email.toLowerCase(),
       password,
       options: {
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/login`,
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?source=email_signup`,
         data: {
           first_name,
           last_name,

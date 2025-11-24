@@ -8,6 +8,12 @@ interface UserProfileProps extends ScreenProps {
   handleSignOut: () => void;
 }
 
+const getAccessToken = async () => {
+  const { data, error } = await supabase.auth.getSession();
+  if (error || !data.session) return null;
+  return data.session.access_token;
+};
+
 const UserProfileScreen: React.FC<UserProfileProps> = ({ showScreen, showAlert, profile, setProfile, handleSignOut }) => {
     // Local state to manage form changes before saving
     const [localProfile, setLocalProfile] = useState<Profile | null>(profile);
@@ -19,6 +25,7 @@ const UserProfileScreen: React.FC<UserProfileProps> = ({ showScreen, showAlert, 
     }, [profile]);
 
 
+    // ---------- LOAD PROFILE FROM API ----------
     useEffect(() => {
     if (profile) return; // Alredy have profile
 
@@ -28,43 +35,78 @@ const UserProfileScreen: React.FC<UserProfileProps> = ({ showScreen, showAlert, 
 
             // Fetch profile from server endpoint which reads HttpOnly cookies
             try {
-                const resp = await fetch('/api/profile');
-                if (!resp.ok) {
-                    const json = await resp.json().catch(() => ({}));
-                    console.error('profile fetch failed', json);
-                    showAlert(json.error || 'Cannot load your profile.', 'error');
-                    setLoading(false);
+                const token = await getAccessToken();
+                if (!token) {
+                    if (!cancelled) {
+                        showAlert('Not authenticated', 'error');
+                        handleSignOut();
+                    }
                     return;
                 }
 
-                const { profile: data } = await resp.json();
-                if (cancelled) return;
+                const resp = await fetch('/api/profile', {
+                    method: 'GET',
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                },
+            });
+
+                const json: { profile?: Profile; error?: string } =
+                    await resp.json().catch(() => ({}) as { profile?: Profile; error?: string });
+
+                if (!resp.ok) {
+                    console.error('profile fetch failed', json);
+                    if (!cancelled) {
+                        showAlert(json.error || 'Cannot load your profile.', 'error');
+                        setLoading(false);
+                    }
+                    return;
+                }
+
+                 const data = json.profile as Profile | null;
+                if (cancelled || !data) {
+                    setLoading(false);
+                    return;
+                }
 
                 setLocalProfile(data);
                 setProfile(data);
                 setLoading(false);
             } catch (err) {
                 console.error('profile fetch error', err);
-                showAlert('Cannot load your profile.', 'error');
-                setLoading(false);
+                if (!cancelled) {
+                    showAlert('Cannot load your profile.', 'error');
+                    setLoading(false);
+                }
             }
         })();
 
     return () => { cancelled = true; };
-  }, [profile, setProfile, showAlert]);
+  }, [profile, setProfile, showAlert, handleSignOut]);
 
   if (loading || !localProfile) {
     return <div className="p-6 text-center text-gray-600">Loading profile...</div>;
   }
 
+    // ---------- SAVE PROFILE ----------
     const handleUpdateProfile = async () => {
         if (!localProfile) return;
         setLoading(true);
 
         try {
+            const token = await getAccessToken();
+            if (!token) {
+                showAlert('Not authenticated', 'error');
+                setLoading(false);
+                return;
+            }
+
             const resp = await fetch('/api/profile', {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
                 body: JSON.stringify({
                     first_name: localProfile.first_name,
                     last_name: localProfile.last_name,
@@ -93,11 +135,13 @@ const UserProfileScreen: React.FC<UserProfileProps> = ({ showScreen, showAlert, 
         }
     };
     
+    // ---------- AVATAR UPLOAD ----------
     const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file || !localProfile?.id) return;
 
         try {
+            // upload to Supabase Storage (uses current auth session)
             const fileExt = file.name.split('.').pop();
             const filePath = `avatars/${localProfile.id}.${fileExt}`;
 
@@ -107,21 +151,35 @@ const UserProfileScreen: React.FC<UserProfileProps> = ({ showScreen, showAlert, 
             const { data: publicURLData } = supabase.storage.from('avatars').getPublicUrl(filePath);
             const publicURL = publicURLData.publicUrl;
 
-                        // Update profile on the server (uses HttpOnly cookies)
-                        const updResp = await fetch('/api/profile', {
-                            method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ avatar_url: publicURL }),
-                        });
-                        const updJson = await updResp.json().catch(() => ({}));
-                        if (!updResp.ok) throw updJson;
+
+            // update avatar_url via API (with token)
+            const token = await getAccessToken();
+                if (!token) {
+                    showAlert('Not authenticated', 'error');
+                    return;
+                }
+
+            // Update profile on the server (uses HttpOnly cookies)
+            const updResp = await fetch('/api/profile', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' ,
+                Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ avatar_url: publicURL }),
+            });
+            const updJson = await updResp.json().catch(() => ({}));
+                if (!updResp.ok) {
+                    console.error('avatar profile update failed', updJson);
+                    throw new Error(updJson.error || 'Failed to update avatar URL');
+                }
             
             // Update both local and main state
             const updatedProfile = { ...localProfile, avatar_url: publicURL };
             setLocalProfile(updatedProfile);
             setProfile(updatedProfile);
             showAlert('Profile picture updated!', "success");
-        } catch (_error){
+        } catch (error){
+            console.error('avatar upload error', error);
             showAlert('Failed to upload image.', "error");
         }
     };

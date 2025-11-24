@@ -4,14 +4,11 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/core/Header';
 import { ScreenProps } from '@/types';
-import DashboardScreen from '@/components/screens/DashboardScreen';
-import { stringify } from 'querystring';
+import { supabase } from '@/lib/supabaseClient';
 
-interface LoginProps extends Omit<ScreenProps, 'profile' | 'setProfile'> {
-  handleGoogleLogin: () => void;
-}
+type LoginProps = Omit<ScreenProps, 'profile' | 'setProfile'>;
 
-const LoginScreen: React.FC<LoginProps> = ({ showScreen, showAlert, handleGoogleLogin }) => {
+const LoginScreen: React.FC<LoginProps> = ({ showScreen, showAlert}) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const router = useRouter();
@@ -25,43 +22,93 @@ const LoginScreen: React.FC<LoginProps> = ({ showScreen, showAlert, handleGoogle
       }
 
       try {
-        const response = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password }),
-        });
+        setIsLoading(true);
 
-        // Safely parse JSON — some responses may have an empty body
-        let result: unknown = {};
+        // Call signInWithPassword inside its own try/catch because
+        // the underlying fetch may throw (network/CORS), and supabase-js
+        // can also return an `error` field. Handle both cases distinctly.
+        let authResult;
         try {
-          // If body is empty, this will throw; we catch and keep result as {}
-          result = await response.json();
-        } catch (parseErr) {
-          // ignore parse errors (empty response)
-          result = {};
-        }
+          authResult = await supabase.auth.signInWithPassword({ email, password });
+        } catch (networkErr) {
+          console.error('Network/auth request failed:', networkErr);
+          const msg = networkErr instanceof Error ? networkErr.message : String(networkErr);
 
-        if (!response.ok) {
-          let serverError: string | undefined;
-          if (typeof result === 'object' && result !== null && 'error' in result) {
-            const e = (result as { error?: unknown }).error;
-            if (typeof e === 'string') serverError = e;
+          // If browser reports offline, give a helpful message.
+          if (typeof navigator !== 'undefined' && !navigator.onLine) {
+            showAlert('You appear to be offline. Check your network connection.', 'error');
+          } else {
+            showAlert('Network error contacting auth server. Check NEXT_PUBLIC_SUPABASE_URL and CORS.', 'error');
           }
 
-          showAlert(serverError ?? 'Login failed.', 'error');
+          // Clear any stale local auth state to avoid repeated failing refreshes
+          try {
+            await supabase.auth.signOut().catch(() => {});
+          } catch {}
+          try {
+            Object.keys(localStorage)
+              .filter((k) => /supabase|sb-|auth/i.test(k))
+              .forEach((k) => localStorage.removeItem(k));
+          } catch (e) {
+            /* ignore */
+          }
+
+          setIsLoading(false);
+          return;
+        }
+
+        const { data, error } = authResult ?? {};
+
+        if (error) {
+          // supabase-js sometimes returns network-level errors as thrown exceptions
+          // but can also return an error object. Handle both.
+          console.error('Sign-in error object:', error);
+          showAlert(error.message || 'Login failed.', 'error');
           return;
         }
 
         showAlert('Login successful!', 'success');
         showScreen('dashboard');
       } catch (err) {
-        console.error('Login error:', err);
-        showAlert('An unexpected error occurred. Please try again.', 'error');
+        console.error('Login error (exception):', err);
+        const msg = err instanceof Error ? err.message : String(err);
+
+        // Network / fetch failure — clear stale auth storage and advise user
+        if (msg.includes('Failed to fetch') || msg.toLowerCase().includes('network')) {
+          try {
+            await supabase.auth.signOut().catch(() => {});
+          } catch {}
+          try {
+            Object.keys(localStorage)
+              .filter((k) => /supabase|sb-|auth/i.test(k))
+              .forEach((k) => localStorage.removeItem(k));
+          } catch (e) {
+            /* ignore */
+          }
+          showAlert('Network error contacting auth server. Cleared local session; please try again.', 'error');
+        } else {
+          showAlert('An unexpected error occurred. Please try again.', 'error');
+        }
+      } finally {
+        setIsLoading(false);
       }
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') handleLogin();
+  };
+
+  const handleGoogleLogin = async () => {
+    const baseUrl =
+      process.env.NEXT_PUBLIC_SITE_URL ??
+      (typeof window !== 'undefined' ? window.location.origin : '');
+
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${baseUrl}/auth/callback?source=google&next=/`,
+      },
+    });
   };
 
   return (
