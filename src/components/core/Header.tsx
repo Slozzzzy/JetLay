@@ -1,7 +1,8 @@
 // src/components/core/Header.tsx
-import React from 'react';
-import Image from 'next/image';
-import type { Profile } from '@/types';
+import React from "react";
+import Image from "next/image";
+import type { Profile } from "@/types";
+import { BellIcon } from "@heroicons/react/24/solid";
 
 type HeaderProps = {
   title: string;
@@ -9,27 +10,24 @@ type HeaderProps = {
   showProfileIcon: boolean;
   showScreen: (id: string) => void;
   profile: Profile | null;
-  
-  // --- ADDED THESE OPTIONAL PROPS ---
+
   showNotificationIcon?: boolean;
   onNotificationClick?: () => void;
   notificationCount?: number;
 };
 
-const Header: React.FC<HeaderProps> = ({ 
-  title, 
-  onBack, 
-  showProfileIcon, 
-  showScreen, 
+const Header: React.FC<HeaderProps> = ({
+  title,
+  onBack,
+  showProfileIcon,
+  showScreen,
   profile,
-  // --- Set default values ---
   showNotificationIcon = false,
   onNotificationClick,
-  notificationCount = 0
+  notificationCount = 0,
 }) => (
   <header className="relative flex items-center justify-between p-4 bg-white border-b border-gray-200 shadow-md sticky top-0 z-50">
-    
-    {/* Left Side (Unchanged) */}
+    {/* Left */}
     <div className="flex items-center gap-3">
       <button
         className="text-xl font-bold text-gray-500 hover:text-gray-700 transition"
@@ -47,24 +45,30 @@ const Header: React.FC<HeaderProps> = ({
       <h2 className="text-2xl font-semibold text-gray-900 m-0">{title}</h2>
     </div>
 
-    {/* --- MODIFIED Right Side Icons --- */}
+    {/* Right */}
     <div className="flex items-center gap-4">
-      
-      {/* --- ADDED Notification Icon --- */}
       {showNotificationIcon && (
         <button
-          onClick={onNotificationClick} // This will trigger the state in App.tsx
-          className="relative flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 shadow-md cursor-pointer hover:bg-gray-200 transition"
+          onClick={onNotificationClick}
+          className="
+            relative flex items-center justify-center w-10 h-10
+            rounded-full bg-white/90 shadow-sm border border-gray-200
+            hover:bg-gray-100 transition duration-150
+          "
           aria-label="Notifications"
         >
-          <span className="text-xl">🔔</span> 
+          <BellIcon className="h-5 w-5 text-gray-700" />
           {notificationCount > 0 && (
-            <span className="absolute top-1 right-1 block h-3 w-3 rounded-full bg-red-500 border-2 border-white" />
+            <span
+              className="
+                absolute top-1.5 right-1.5 h-2.5 w-2.5 rounded-full
+                bg-red-500 border-2 border-white shadow-md
+              "
+            />
           )}
         </button>
       )}
-  
-      {/* Profile Icon (Unchanged) */}
+
       {showProfileIcon && (
         <button
           onClick={() => showScreen("user")}
@@ -72,9 +76,15 @@ const Header: React.FC<HeaderProps> = ({
           aria-label="User Profile"
         >
           {profile?.avatar_url ? (
-              <Image src={profile.avatar_url} alt="User Avatar" width={40} height={40} className="object-cover w-full h-full" />
+            <Image
+              src={profile.avatar_url}
+              alt="User Avatar"
+              width={40}
+              height={40}
+              className="object-cover w-full h-full"
+            />
           ) : (
-              <span className="text-xl">👤</span>
+            <span className="text-xl">👤</span>
           )}
         </button>
       )}
