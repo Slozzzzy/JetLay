@@ -5,11 +5,9 @@ import Header from '@/components/core/Header';
 import { supabase } from '@/lib/supabaseClient';
 import { ScreenProps } from '@/types';
 
-interface CreateAccountProps extends Omit<ScreenProps, 'profile' | 'setProfile'> {
-  handleGoogleLogin: () => void;
-}
+type CreateAccountProps = Omit<ScreenProps, 'profile' | 'setProfile'>;
 
-const CreateAccountScreen: React.FC<CreateAccountProps> = ({ showScreen, showAlert, handleGoogleLogin }) => {
+const CreateAccountScreen: React.FC<CreateAccountProps> = ({ showScreen, showAlert}) => {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -88,14 +86,19 @@ const CreateAccountScreen: React.FC<CreateAccountProps> = ({ showScreen, showAle
     const [firstName, ...lastNameParts] = fullName.split(' ');
     const lastName = lastNameParts.join(' ');
 
+    const baseUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    (typeof window !== 'undefined' ? window.location.origin : '');
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
+        emailRedirectTo: `${baseUrl}/auth/callback?type=signup`,
         data: {
           first_name: firstName,
           last_name: lastName,
-          avatar_url: '', // Default empty avatar
+          avatar_url: '',
         },
       },
     });
@@ -106,6 +109,20 @@ const CreateAccountScreen: React.FC<CreateAccountProps> = ({ showScreen, showAle
       showAlert('Sign up successful! Please check your email to verify your account.', 'success');
       showScreen('welcomeBack');
     }
+  };
+
+  const handleGoogleLogin = async () => {
+    const baseUrl =
+      process.env.NEXT_PUBLIC_SITE_URL ??
+      (typeof window !== 'undefined' ? window.location.origin : '');
+
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        // Google OAuth → callback knows this is Google and will send to dashboard
+        redirectTo: `${baseUrl}/auth/callback?source=google&next=/`,
+      },
+    });
   };
 
   // Helper to clear errors when user starts typing again
