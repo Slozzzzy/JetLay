@@ -1,70 +1,69 @@
 // src/components/screens/AddReviewScreen.tsx
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import Header from '@/components/core/Header';
 import { ScreenProps } from '@/types';
-import { Star } from 'lucide-react';
+import { Star, StarHalf, StarOff } from 'lucide-react';
 
 type StarRatingProps = {
-  value: number;                    // 0–5
+  value: number; // 0–5 (0.5 step)
   onChange: (v: number) => void;
   label?: string;
 };
 
 const StarRating: React.FC<StarRatingProps> = ({ value, onChange, label = 'Rating' }) => {
   const [hover, setHover] = useState<number | null>(null);
-
   const current = hover ?? value;
-  const stars = useMemo(() => [1, 2, 3, 4, 5], []);
+  const stars = [1, 2, 3, 4, 5];
 
-  const handleKey = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
-      e.preventDefault();
-      onChange(Math.min(5, (value || 0) + 1));
-    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
-      e.preventDefault();
-      onChange(Math.max(0, (value || 0) - 1));
-    } else if (e.key === '0') {
-      onChange(0);
-    }
+  // เลือก icon ตามค่า
+  const getIcon = (index: number) => {
+    const diff = current - index;
+
+    if (diff >= 0) return <Star className="w-7 h-7 fill-yellow-400 text-yellow-400" />;
+    if (diff >= -0.5) return <StarHalf className="w-7 h-7 text-yellow-400" />;
+    return <StarOff className="w-7 h-7 text-gray-300" />;
+  };
+
+  // toggle แบบ 2-click
+  const handleClick = (index: number) => {
+    if (value === index) return onChange(index - 0.5); // เต็ม → ครึ่ง
+    if (value === index - 0.5) return onChange(index); // ครึ่ง → เต็ม
+    return onChange(index); // โดนดวงใหม่ → เต็ม
   };
 
   return (
     <div className="mb-5">
       <label className="block text-sm font-semibold text-gray-900 mb-2">{label}</label>
-      <div
-        role="radiogroup"
-        aria-label={label}
-        tabIndex={0}
-        onKeyDown={handleKey}
-        className="flex items-center gap-2"
-      >
-        {stars.map((n) => {
-          const filled = n <= current;
-          return (
-            <button
-              key={n}
-              type="button"
-              role="radio"
-              aria-checked={value === n}
-              aria-label={`${n} star${n > 1 ? 's' : ''}`}
-              onMouseEnter={() => setHover(n)}
-              onMouseLeave={() => setHover(null)}
-              onFocus={() => setHover(n)}
-              onBlur={() => setHover(null)}
-              onClick={() => onChange(n)}
-              className="p-1 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-400"
-            >
-              <Star
-                className={`w-7 h-7 transition-transform ${filled ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'} ${hover ? 'scale-110' : ''}`}
-              />
-            </button>
-          );
-        })}
-        <span className="ml-2 text-sm text-gray-700">{current ? `${current}/5` : 'No rating'}</span>
+
+      <div className="flex items-center gap-2">
+        {stars.map((n) => (
+          <div
+            key={n}
+            className="cursor-pointer transition-transform hover:scale-110"
+            onMouseEnter={() => setHover(n)}
+            onMouseLeave={() => setHover(null)}
+            onClick={() => handleClick(n)}
+          >
+            {getIcon(n)}
+          </div>
+        ))}
+
+        <span className="ml-2 text-sm text-gray-700">
+          {current ? `${current}/5` : 'No rating'}
+        </span>
+
+        {/* Clear button */}
         <button
           type="button"
           onClick={() => onChange(0)}
-          className="ml-3 text-xs text-gray-500 underline hover:text-gray-700"
+          className="
+            ml-3 px-3 py-1.5
+            text-xs font-medium
+            text-gray-600
+            border border-gray-300 rounded-lg
+            hover:border-purple-400 hover:text-purple-600
+            transition-all
+          "
         >
           Clear
         </button>
@@ -83,9 +82,6 @@ const AddReviewScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
   const canPost = title.trim().length > 0 && experience.trim().length > 0 && rating > 0;
 
   const handlePost = () => {
-    // TODO: send to your backend/Supabase here
-    // Example payload:
-    // { title, experience, mapLink, rating, files }
     showScreen('reviews');
   };
 
@@ -94,12 +90,15 @@ const AddReviewScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
       <Header
         title="Add Review"
         onBack={() => showScreen('reviews')}
-        showProfileIcon={true}
+        showProfileIcon
         showScreen={showScreen}
         profile={profile}
       />
+
       <div className="p-6 flex-1 max-w-md mx-auto w-full">
         <div className="bg-white p-8 rounded-2xl shadow-xl">
+
+          {/* Title */}
           <div className="mb-5">
             <input
               type="text"
@@ -110,9 +109,10 @@ const AddReviewScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
             />
           </div>
 
-          {/* ⭐ New star rating */}
+          {/* Rating */}
           <StarRating value={rating} onChange={setRating} label="Your rating" />
 
+          {/* Experience */}
           <div className="mb-5">
             <textarea
               value={experience}
@@ -121,6 +121,8 @@ const AddReviewScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
               className="w-full p-3 border border-gray-300 rounded-lg min-h-[150px]"
             />
           </div>
+
+          {/* Map Link */}
           <div className="mb-5">
             <input
               type="url"
@@ -130,37 +132,58 @@ const AddReviewScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
               className="w-full p-3 border border-gray-300 rounded-lg h-12"
             />
           </div>
+
+          {/* File Upload */}
           <div className="mb-6">
-            <label className="block text-sm font-semibold text-gray-900 mb-2">Attach photos</label>
-            <div className="flex items-center space-x-3">
-              <label
-                htmlFor="reviewFile"
-                className="px-4 py-2 bg-gray-200 text-gray-900 font-semibold rounded-lg cursor-pointer hover:bg-gray-300"
+            <label className="block text-sm font-semibold text-gray-900 mb-2">
+              Attach photos
+            </label>
+
+            <label className="cursor-pointer">
+              <div
+                className="
+                  w-full h-12
+                  flex items-center justify-between
+                  px-4
+                  border border-gray-300 rounded-lg bg-white
+                  shadow-sm hover:border-purple-400 hover:shadow-md
+                  transition-all
+                "
               >
-                Choose File
-              </label>
+                <span className="text-sm text-gray-600">
+                  {files.length ? `${files.length} file(s) selected` : "Choose file..."}
+                </span>
+
+                <span className="text-xs font-medium text-purple-600">
+                  Browse
+                </span>
+              </div>
+
               <input
                 type="file"
                 multiple
-                id="reviewFile"
                 className="hidden"
                 onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
               />
-              <span className="text-sm text-gray-500">
-                {files.length ? `${files.length} file(s) selected` : 'No file chosen'}
-              </span>
-            </div>
+            </label>
           </div>
+
+          {/* Submit */}
           <button
-            className={`w-full py-3 text-white font-bold rounded-xl shadow-lg transition ${
-              canPost ? 'opacity-100' : 'opacity-60 cursor-not-allowed'
-            }`}
-            style={{ background: 'linear-gradient(90deg, #d8b4fe, #fbcfe8)', color: '#1e1b4b' }}
+            className={`
+              w-full py-3 font-bold rounded-xl shadow-lg transition
+              ${canPost ? '' : 'opacity-60 cursor-not-allowed'}
+            `}
+            style={{
+              background: 'linear-gradient(90deg, #d8b4fe, #fbcfe8)',
+              color: '#1e1b4b'
+            }}
             onClick={handlePost}
             disabled={!canPost}
           >
             Post Review
           </button>
+
         </div>
       </div>
     </div>
