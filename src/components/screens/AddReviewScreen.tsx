@@ -22,8 +22,8 @@ const StarRating: React.FC<StarRatingProps> = ({ value, onChange, label = 'Ratin
     const diff = current - index;
 
     if (diff >= 0) return <Star className="w-7 h-7 fill-yellow-400 text-yellow-400" />;
-    if (diff >= -0.5) return <StarHalf className="w-7 h-7 text-yellow-400" />;
-    return <StarOff className="w-7 h-7 text-gray-300" />;
+    // if (diff >= -0.5) return <StarHalf className="w-7 h-7 text-yellow-400" />;
+    return <Star className="w-7 h-7 text-gray-300" />;
   };
 
   // toggle แบบ 2-click
@@ -309,7 +309,7 @@ const AddReviewScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
                 onChange={handleFileChange}
                 disabled={isSubmitting}
               />
-            </label>
+            </div>
           </div>
 
           <button
