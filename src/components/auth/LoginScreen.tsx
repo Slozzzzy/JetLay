@@ -1,97 +1,100 @@
 // src/components/auth/LoginScreen.tsx
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
 import Header from '@/components/core/Header';
 import { ScreenProps } from '@/types';
 import { supabase } from '@/lib/supabaseClient';
+import { 
+    Mail, 
+    Lock, 
+    Eye, 
+    EyeOff, 
+    ArrowRight, 
+    Loader2, 
+    LogIn
+} from 'lucide-react';
 
 type LoginProps = Omit<ScreenProps, 'profile' | 'setProfile'>;
 
-const LoginScreen: React.FC<LoginProps> = ({ showScreen, showAlert}) => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const router = useRouter();
-    const [showPassword, setShowPassword] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
+const LoginScreen: React.FC<LoginProps> = ({ showScreen, showAlert }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-    const handleLogin = async () => {
-      if (!email || !password) {
-        showAlert('Please enter both email and password.', 'error');
+  const handleLogin = async () => {
+    if (!email || !password) {
+      showAlert('Please enter both email and password.', 'error');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+
+      let authResult;
+
+      try {
+        authResult = await supabase.auth.signInWithPassword({ email, password });
+      } catch (networkErr) {
+        console.error('Network/auth request failed:', networkErr);
+
+        const msg = networkErr instanceof Error ? networkErr.message : String(networkErr);
+
+        if (typeof navigator !== 'undefined' && !navigator.onLine) {
+          showAlert('You appear to be offline. Check your network connection.', 'error');
+        } else {
+          showAlert('Network error contacting auth server. Check NEXT_PUBLIC_SUPABASE_URL and CORS.', 'error');
+        }
+
+        try {
+          await supabase.auth.signOut().catch(() => {});
+        } catch {}
+
+        try {
+          Object.keys(localStorage)
+            .filter((k) => /supabase|sb-|auth/i.test(k))
+            .forEach((k) => localStorage.removeItem(k));
+        } catch {}
+
+        setIsLoading(false);
         return;
       }
 
-      try {
-        setIsLoading(true);
+      const { data, error } = authResult ?? {};
 
-        // Call signInWithPassword inside its own try/catch because
-        // the underlying fetch may throw (network/CORS), and supabase-js
-        // can also return an `error` field. Handle both cases distinctly.
-        let authResult;
-        try {
-          authResult = await supabase.auth.signInWithPassword({ email, password });
-        } catch (networkErr) {
-          console.error('Network/auth request failed:', networkErr);
-          const msg = networkErr instanceof Error ? networkErr.message : String(networkErr);
-
-          // If browser reports offline, give a helpful message.
-          if (typeof navigator !== 'undefined' && !navigator.onLine) {
-            showAlert('You appear to be offline. Check your network connection.', 'error');
-          } else {
-            showAlert('Network error contacting auth server. Check NEXT_PUBLIC_SUPABASE_URL and CORS.', 'error');
-          }
-
-          // Clear any stale local auth state to avoid repeated failing refreshes
-          try {
-            await supabase.auth.signOut().catch(() => {});
-          } catch {}
-          try {
-            Object.keys(localStorage)
-              .filter((k) => /supabase|sb-|auth/i.test(k))
-              .forEach((k) => localStorage.removeItem(k));
-          } catch (e) {
-            /* ignore */
-          }
-
-          setIsLoading(false);
-          return;
-        }
-
-        const { data, error } = authResult ?? {};
-
-        if (error) {
-          // supabase-js sometimes returns network-level errors as thrown exceptions
-          // but can also return an error object. Handle both.
-          console.error('Sign-in error object:', error);
-          showAlert(error.message || 'Login failed.', 'error');
-          return;
-        }
-
-        showAlert('Login successful!', 'success');
-        showScreen('dashboard');
-      } catch (err) {
-        console.error('Login error (exception):', err);
-        const msg = err instanceof Error ? err.message : String(err);
-
-        // Network / fetch failure — clear stale auth storage and advise user
-        if (msg.includes('Failed to fetch') || msg.toLowerCase().includes('network')) {
-          try {
-            await supabase.auth.signOut().catch(() => {});
-          } catch {}
-          try {
-            Object.keys(localStorage)
-              .filter((k) => /supabase|sb-|auth/i.test(k))
-              .forEach((k) => localStorage.removeItem(k));
-          } catch (e) {
-            /* ignore */
-          }
-          showAlert('Network error contacting auth server. Cleared local session; please try again.', 'error');
-        } else {
-          showAlert('An unexpected error occurred. Please try again.', 'error');
-        }
-      } finally {
-        setIsLoading(false);
+      if (error) {
+        console.error('Sign-in error object:', error);
+        showAlert(error.message || 'Login failed.', 'error');
+        return;
       }
+
+      showAlert('Login successful!', 'success');
+      showScreen('dashboard');
+    } catch (err) {
+      console.error('Login error (exception):', err);
+      const msg = err instanceof Error ? err.message : String(err);
+
+      if (msg.toLowerCase().includes('network') || msg.includes('Failed to fetch')) {
+        try {
+          await supabase.auth.signOut().catch(() => {});
+        } catch {}
+
+        try {
+          Object.keys(localStorage)
+            .filter((k) => /supabase|sb-|auth/i.test(k))
+            .forEach((k) => localStorage.removeItem(k));
+        } catch {}
+
+        showAlert(
+          'Network error contacting auth server. Cleared local session; please try again.',
+          'error'
+        );
+      } else {
+        showAlert('An unexpected error occurred. Please try again.', 'error');
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -112,68 +115,68 @@ const LoginScreen: React.FC<LoginProps> = ({ showScreen, showAlert}) => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-purple-50">
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 pb-20">
       <Header
-        title={'Welcome Back'}
+        title="Welcome Back"
         onBack={() => showScreen('welcomeChoice')}
         showProfileIcon={false}
         showScreen={showScreen}
         profile={null}
       />
-      <div className="flex-1 p-6 flex justify-center items-start pt-12">
-        <div className="bg-white p-10 rounded-2xl shadow-2xl w-full max-w-md text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h2>
-          <p className="text-gray-500 mb-6">Sign in to continue your journey.</p>
 
-          {/* Email */}
-          <input
-            type="email"
-            placeholder="Email Address"
-            className="w-full p-3 mb-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            onKeyDown={onKeyDown}
-            autoComplete="email"
-          />
-
-          {/* Password with show/hide */}
-          <div className="relative mb-4">
-            <input
-              type={showPassword ? 'text' : 'password'}
-              placeholder="Password"
-              className="w-full p-3 pr-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onKeyDown={onKeyDown}
-              autoComplete="current-password"
-            />
-            <button
-              type="button"
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-800"
-              onClick={() => setShowPassword((s) => !s)}
-            >
-              {showPassword ? (
-                // Eye Off
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-                    d="M3 3l18 18M10.584 10.587A2 2 0 0012 14a2 2 0 001.414-.586M9.88 4.603A9.956 9.956 0 0112 4c4.418 0 8.167 2.866 9.543 6.86a.999.999 0 010 .681 10.048 10.048 0 01-3.04 4.29M6.455 6.455C4.417 7.83 3 9.778 2.457 11.54a1 1 0 000 .682C3.833 16.217 7.582 19.083 12 19.083c1.15 0 2.257-.19 3.286-.542" />
-                </svg>
-              ) : (
-                // Eye
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-              )}
-            </button>
+      <div className="flex-1 px-6 flex justify-center items-center">
+        <div className="bg-white/80 backdrop-blur-xl rounded-[32px] p-8 shadow-2xl ring-1 ring-white/60 w-full max-w-md text-center">
+          <div className="mb-6 flex justify-center">
+            <div className="p-3 bg-purple-100 rounded-full text-purple-600">
+              <LogIn className="w-8 h-8" />
+            </div>
           </div>
 
-          <div className="flex justify-end w-full mb-4">
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h2>
+          <p className="text-gray-500 mb-8 text-sm">Sign in to continue your journey.</p>
+
+          <div className="space-y-4 mb-2">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Mail className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="email"
+                placeholder="Email Address"
+                className="w-full pl-11 pr-4 py-3.5 rounded-xl border-0 ring-1 ring-gray-200 bg-gray-50 text-gray-900 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-purple-500 transition-all outline-none font-medium"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={onKeyDown}
+                autoComplete="email"
+              />
+            </div>
+
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Lock className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Password"
+                className="w-full pl-11 pr-12 py-3.5 rounded-xl border-0 ring-1 ring-gray-200 bg-gray-50 text-gray-900 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-purple-500 transition-all outline-none font-medium"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={onKeyDown}
+                autoComplete="current-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 flex items-center pr-4 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
+          </div>
+
+          <div className="flex justify-end w-full mb-6">
             <span
-              className="text-purple-700 cursor-pointer font-semibold text-sm hover:text-purple-500"
+              className="text-purple-600 cursor-pointer font-semibold text-sm hover:text-purple-800 hover:underline"
               onClick={() => showScreen('forgotPassword')}
             >
               Forgot Password?
@@ -182,33 +185,62 @@ const LoginScreen: React.FC<LoginProps> = ({ showScreen, showAlert}) => {
 
           <button
             disabled={isLoading}
-            className="w-full py-3 mb-4 font-bold text-lg rounded-xl shadow-lg transition disabled:opacity-70"
-            style={{ background: 'linear-gradient(90deg, #d8b4fe, #fbcfe8)', color: '#1e1b4b' }}
+            className="
+              group relative w-full overflow-hidden rounded-xl mb-4
+              bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 
+              bg-[length:200%_auto] p-4 shadow-lg shadow-indigo-500/20 
+              transition-all duration-500 
+              hover:bg-right hover:shadow-xl hover:shadow-purple-500/30 hover:-translate-y-0.5 
+              active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed
+            "
             onClick={handleLogin}
           >
-            {isLoading ? 'Signing In…' : 'Sign In'}
+            <div className="relative flex items-center justify-center gap-2">
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 text-white animate-spin" />
+                  <span className="text-lg font-bold text-white">Signing In...</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-lg font-bold text-white tracking-wide">Sign In</span>
+                  <ArrowRight className="w-5 h-5 text-white group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
+            </div>
           </button>
+
+          <div className="relative flex py-2 items-center mb-4">
+            <div className="flex-grow border-t border-gray-200"></div>
+            <span className="flex-shrink-0 mx-4 text-gray-400 text-xs font-semibold uppercase tracking-wider">
+              Or continue with
+            </span>
+            <div className="flex-grow border-t border-gray-200"></div>
+          </div>
 
           <button
             onClick={handleGoogleLogin}
-            className="flex items-center justify-center w-full py-3 bg-white border border-gray-300 rounded-lg"
+            className="flex items-center justify-center w-full py-3.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors shadow-sm text-gray-700 font-bold"
           >
             <Image
               src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg"
               alt="Google G Logo"
-              width={24}
-              height={24}
+              width={20}
+              height={20}
               className="mr-3"
             />
             Sign in with Google
           </button>
 
-          <span
-            className="text-purple-700 cursor-pointer font-semibold mt-4 block text-sm hover:text-purple-500"
-            onClick={() => showScreen('createAccount')}
-          >
-            Need an account? Sign up.
-          </span>
+          <p className="mt-8 text-sm text-gray-500">
+            Don&apos;t have an account?{' '}
+            <span
+              className="text-purple-600 font-bold cursor-pointer hover:underline decoration-2 underline-offset-2"
+              onClick={() => showScreen('createAccount')}
+            >
+              Sign up
+            </span>
+          </p>
         </div>
       </div>
     </div>

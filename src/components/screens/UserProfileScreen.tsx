@@ -3,6 +3,17 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabaseClient';
 import type { Profile, ScreenProps } from '@/types';
+import { 
+  Camera, 
+  User, 
+  Phone, 
+  Calendar, 
+  LogOut, 
+  CheckCircle,
+  ChevronLeft,
+  Loader2,
+  AlertCircle
+} from 'lucide-react';
 
 interface UserProfileProps extends ScreenProps {
   handleSignOut: () => void;
@@ -18,6 +29,7 @@ const UserProfileScreen: React.FC<UserProfileProps> = ({ showScreen, showAlert, 
     // Local state to manage form changes before saving
     const [localProfile, setLocalProfile] = useState<Profile | null>(profile);
     const [loading, setLoading] = useState(!profile); 
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         setLocalProfile(profile ?? null);
@@ -27,7 +39,7 @@ const UserProfileScreen: React.FC<UserProfileProps> = ({ showScreen, showAlert, 
 
     // ---------- LOAD PROFILE FROM API ----------
     useEffect(() => {
-    if (profile) return; // Alredy have profile
+    if (profile) return; // Already have profile
 
         let cancelled = false;
         (async () => {
@@ -38,7 +50,7 @@ const UserProfileScreen: React.FC<UserProfileProps> = ({ showScreen, showAlert, 
                 const token = await getAccessToken();
                 if (!token) {
                     if (!cancelled) {
-                        showAlert('Not authenticated', 'error');
+                        showAlert?.('Not authenticated', 'error');
                         handleSignOut();
                     }
                     return;
@@ -57,7 +69,7 @@ const UserProfileScreen: React.FC<UserProfileProps> = ({ showScreen, showAlert, 
                 if (!resp.ok) {
                     console.error('profile fetch failed', json);
                     if (!cancelled) {
-                        showAlert(json.error || 'Cannot load your profile.', 'error');
+                        showAlert?.(json.error || 'Cannot load your profile.', 'error');
                         setLoading(false);
                     }
                     return;
@@ -75,7 +87,7 @@ const UserProfileScreen: React.FC<UserProfileProps> = ({ showScreen, showAlert, 
             } catch (err) {
                 console.error('profile fetch error', err);
                 if (!cancelled) {
-                    showAlert('Cannot load your profile.', 'error');
+                    showAlert?.('Cannot load your profile.', 'error');
                     setLoading(false);
                 }
             }
@@ -85,19 +97,23 @@ const UserProfileScreen: React.FC<UserProfileProps> = ({ showScreen, showAlert, 
   }, [profile, setProfile, showAlert, handleSignOut]);
 
   if (loading || !localProfile) {
-    return <div className="p-6 text-center text-gray-600">Loading profile...</div>;
+    return (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-purple-50 text-gray-500 gap-3">
+             <Loader2 className="w-10 h-10 animate-spin text-purple-600" />
+             <p className="font-medium">Loading profile...</p>
+        </div>
+    );
   }
 
     // ---------- SAVE PROFILE ----------
     const handleUpdateProfile = async () => {
         if (!localProfile) return;
-        setLoading(true);
+        setSaving(true);
 
         try {
             const token = await getAccessToken();
             if (!token) {
-                showAlert('Not authenticated', 'error');
-                setLoading(false);
+                showAlert?.('Not authenticated', 'error');
                 return;
             }
 
@@ -118,20 +134,19 @@ const UserProfileScreen: React.FC<UserProfileProps> = ({ showScreen, showAlert, 
             const json = await resp.json().catch(() => ({}));
             if (!resp.ok) {
                 console.error('profile update failed', json);
-                showAlert(json.error || 'Failed to update profile!', 'error');
-                setLoading(false);
+                showAlert?.(json.error || 'Failed to update profile!', 'error');
                 return;
             }
 
             const updated = json.profile ?? localProfile;
             setLocalProfile(updated);
             setProfile(updated);
-            showAlert('Profile Saved!', 'success');
+            showAlert?.('Profile Saved!', 'success');
         } catch (err) {
             console.error('update error', err);
-            showAlert('Failed to update profile!', 'error');
+            showAlert?.('Failed to update profile!', 'error');
         } finally {
-            setLoading(false);
+            setSaving(false);
         }
     };
     
@@ -155,7 +170,7 @@ const UserProfileScreen: React.FC<UserProfileProps> = ({ showScreen, showAlert, 
             // update avatar_url via API (with token)
             const token = await getAccessToken();
                 if (!token) {
-                    showAlert('Not authenticated', 'error');
+                    showAlert?.('Not authenticated', 'error');
                     return;
                 }
 
@@ -177,49 +192,140 @@ const UserProfileScreen: React.FC<UserProfileProps> = ({ showScreen, showAlert, 
             const updatedProfile = { ...localProfile, avatar_url: publicURL };
             setLocalProfile(updatedProfile);
             setProfile(updatedProfile);
-            showAlert('Profile picture updated!', "success");
+            showAlert?.('Profile picture updated!', "success");
         } catch (error){
             console.error('avatar upload error', error);
-            showAlert('Failed to upload image.', "error");
+            showAlert?.('Failed to upload image.', "error");
         }
     };
 
     return (
-        <div className="flex flex-col min-h-screen bg-purple-50 p-6 justify-center items-center">
-            <div className="w-full max-w-md">
-                <div className="relative mb-6 text-center">
-                    <button className="absolute top-1 left-0 text-gray-600 font-semibold flex items-center" onClick={() => showScreen('dashboard')}>
-                    &larr; Back
-                    </button>
-                    <h1 className="text-3xl font-bold text-gray-900">User Profile</h1>
-                </div>
-
-                <div className="flex justify-center mb-6">
-                    {localProfile.avatar_url ? (
-                    <Image src={localProfile.avatar_url} alt="Profile" width={120} height={120} className="w-32 h-32 rounded-full object-cover shadow-lg" />
-                    ) : (
-                    <div className="w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center text-gray-400 text-6xl">👤</div>
-                    )}
-                </div>
-
-                <input type="text" placeholder="First Name" value={localProfile.first_name || ''} onChange={(e) => setLocalProfile({ ...localProfile, first_name: e.target.value })} className="w-full p-4 mb-4 border border-gray-300 rounded-lg" />
-                <input type="text" placeholder="Last Name" value={localProfile.last_name || ''} onChange={(e) => setLocalProfile({ ...localProfile, last_name: e.target.value })} className="w-full p-4 mb-4 border border-gray-300 rounded-lg" />
-                <input type="date" placeholder="Birth Date" value={localProfile.birth_date || ''} onChange={(e) => setLocalProfile({ ...localProfile, birth_date: e.target.value })} className="w-full p-4 mb-6 border border-gray-300 rounded-lg" />
-                <input type="tel" placeholder="Phone Number" value={localProfile.phone || ''} onChange={(e) => setLocalProfile({ ...localProfile, phone: e.target.value })} className="w-full p-4 mb-6 border border-gray-300 rounded-lg" />
-
-                <div className="flex items-center justify-between w-full p-4 mb-8 border border-gray-300 rounded-lg">
-                    <label className="text-gray-500">Profile Picture</label>
-                    <label htmlFor="profilePicture" className="px-4 py-2 bg-gray-200 text-gray-900 font-semibold rounded-lg cursor-pointer hover:bg-gray-300">Choose File</label>
-                    <input type="file" id="profilePicture" accept=".jpg,.jpeg,.png" className="hidden" onChange={handleAvatarUpload} />
-                </div>
-
-                <button className="w-full py-4 text-white font-bold text-lg rounded-full shadow-lg" style={{ background: 'linear-gradient(90deg, #a78bfa, #f472b6)' }} onClick={handleUpdateProfile}>
-                    Save Changes
+        <div className="flex flex-col min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 pb-10">
+            
+            {/* Header Area */}
+            <div className="relative pt-6 px-6 mb-6 flex items-center justify-between">
+                <button 
+                    onClick={() => showScreen('dashboard')}
+                    className="p-3 rounded-full bg-white/80 hover:bg-white shadow-sm border border-white/50 transition-all text-gray-700"
+                >
+                    <ChevronLeft className="w-6 h-6" />
                 </button>
+                <h1 className="text-2xl font-bold text-gray-800">Edit Profile</h1>
+                <div className="w-12" /> {/* Spacer to center title */}
+            </div>
+
+            <div className="flex-1 px-6 max-w-lg mx-auto w-full flex flex-col items-center">
                 
-                <button className="w-full py-3 mt-4 bg-red-600 text-white font-bold rounded-xl shadow-md hover:bg-red-700" onClick={handleSignOut}>
-                    Log Out
-                </button>
+                {/* Avatar Section */}
+                <div className="relative group mb-8">
+                    <div className="w-36 h-36 rounded-full p-1 bg-gradient-to-br from-purple-400 to-pink-400 shadow-xl">
+                        <div className="w-full h-full rounded-full overflow-hidden bg-white relative">
+                            {localProfile.avatar_url ? (
+                                <Image src={localProfile.avatar_url} alt="Profile" fill className="object-cover" />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-300">
+                                    <User className="w-16 h-16" />
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    
+                    {/* Camera Button Overlay */}
+                    <label 
+                        htmlFor="profilePicture" 
+                        className="absolute bottom-1 right-1 p-2.5 bg-gray-900 text-white rounded-full shadow-lg cursor-pointer hover:bg-gray-800 hover:scale-105 transition-all border-2 border-white"
+                    >
+                        <Camera className="w-5 h-5" />
+                        <input type="file" id="profilePicture" accept=".jpg,.jpeg,.png" className="hidden" onChange={handleAvatarUpload} />
+                    </label>
+                </div>
+
+                {/* Form Container */}
+                <div className="w-full bg-white/80 backdrop-blur-xl rounded-[32px] p-8 shadow-2xl ring-1 ring-white/60 space-y-5">
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-gray-500 uppercase ml-1">First Name</label>
+                            <input 
+                                type="text" 
+                                value={localProfile.first_name || ''} 
+                                onChange={(e) => setLocalProfile({ ...localProfile, first_name: e.target.value })} 
+                                className="w-full rounded-xl bg-gray-50 border-0 px-4 py-3 text-gray-900 font-semibold focus:bg-white focus:ring-2 focus:ring-purple-500 transition-all outline-none"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold text-gray-500 uppercase ml-1">Last Name</label>
+                            <input 
+                                type="text" 
+                                value={localProfile.last_name || ''} 
+                                onChange={(e) => setLocalProfile({ ...localProfile, last_name: e.target.value })} 
+                                className="w-full rounded-xl bg-gray-50 border-0 px-4 py-3 text-gray-900 font-semibold focus:bg-white focus:ring-2 focus:ring-purple-500 transition-all outline-none"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-500 uppercase ml-1 flex items-center gap-1">
+                            <Calendar className="w-3 h-3" /> Birth Date
+                        </label>
+                        <input 
+                            type="date" 
+                            value={localProfile.birth_date || ''} 
+                            onChange={(e) => setLocalProfile({ ...localProfile, birth_date: e.target.value })} 
+                            className="w-full rounded-xl bg-gray-50 border-0 px-4 py-3 text-gray-900 font-medium focus:bg-white focus:ring-2 focus:ring-purple-500 transition-all outline-none"
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-500 uppercase ml-1 flex items-center gap-1">
+                            <Phone className="w-3 h-3" /> Phone Number
+                        </label>
+                        <input 
+                            type="tel" 
+                            value={localProfile.phone || ''} 
+                            onChange={(e) => setLocalProfile({ ...localProfile, phone: e.target.value })} 
+                            className="w-full rounded-xl bg-gray-50 border-0 px-4 py-3 text-gray-900 font-medium focus:bg-white focus:ring-2 focus:ring-purple-500 transition-all outline-none"
+                        />
+                    </div>
+
+                    {/* Actions */}
+                    <div className="pt-4 space-y-3">
+                        <button 
+                            onClick={handleUpdateProfile}
+                            disabled={saving}
+                            className="
+                                group relative w-full overflow-hidden rounded-[24px] 
+                                bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 
+                                bg-[length:200%_auto] p-4 shadow-xl shadow-indigo-500/30 
+                                transition-all duration-500 
+                                hover:bg-right hover:shadow-2xl hover:shadow-purple-500/40 hover:-translate-y-1 
+                                active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed
+                            "
+                        >
+                            <div className="relative flex items-center justify-center gap-2">
+                                {saving ? (
+                                    <>
+                                        <Loader2 className="w-5 h-5 text-white animate-spin" />
+                                        <span className="text-lg font-bold text-white">Saving...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <CheckCircle className="w-5 h-5 text-white" />
+                                        <span className="text-lg font-bold text-white tracking-wide">Save Changes</span>
+                                    </>
+                                )}
+                            </div>
+                        </button>
+                        
+                        <button 
+                            onClick={handleSignOut}
+                            className="w-full py-4 text-gray-500 font-bold hover:text-red-600 hover:bg-red-50 rounded-[24px] transition-colors flex items-center justify-center gap-2"
+                        >
+                            <LogOut className="w-5 h-5" />
+                            Sign Out
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     );

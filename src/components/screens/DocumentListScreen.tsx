@@ -1,7 +1,20 @@
+// src/components/screens/DocumentListScreen.tsx
 import React, { useEffect, useState, useCallback } from 'react';
 import Header from '@/components/core/Header';
 import { ScreenProps } from '@/types';
 import { supabase } from '@/lib/supabaseClient';
+import { 
+  FileText, 
+  Calendar, 
+  Trash2, 
+  Edit2, 
+  Plus, 
+  ExternalLink, 
+  X, 
+  AlertCircle, 
+  Loader2, 
+  UploadCloud 
+} from 'lucide-react';
 
 type DocumentStatus = 'valid' | 'expiring' | 'expired';
 
@@ -12,20 +25,21 @@ interface DocumentItem {
   document_type: string;
   status: DocumentStatus;
   url: string | null;
-  storage_path: string | null; // ⬅️ we now have this from API
+  storage_path: string | null;
 }
 
 const statusStyles: Record<
   DocumentStatus,
-  { bg: string; text: string; label: string }
+  { bg: string; text: string; border: string; label: string }
 > = {
-  valid: { bg: 'bg-green-100', text: 'text-green-800', label: 'Valid' },
+  valid: { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200', label: 'Valid' },
   expiring: {
-    bg: 'bg-orange-100',
-    text: 'text-orange-800',
+    bg: 'bg-orange-50',
+    text: 'text-orange-700',
+    border: 'border-orange-200',
     label: 'Expiring soon',
   },
-  expired: { bg: 'bg-red-100', text: 'text-red-800', label: 'Expired' },
+  expired: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', label: 'Expired' },
 };
 
 const DocumentListScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
@@ -50,22 +64,14 @@ const DocumentListScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
         const res = await fetch(`/api/documents?userId=${userId}`);
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
-          const message =
-            typeof data === 'object' && data && 'error' in data
-              ? (data as { error?: string }).error
-              : undefined;
-          throw new Error(message || 'Failed to load documents');
+          throw new Error(data.error || 'Failed to load documents');
         }
 
         const data = (await res.json()) as DocumentItem[];
         setDocuments(data);
       } catch (err) {
         console.error(err);
-        if (err instanceof Error) {
-          setError(err.message || 'Something went wrong');
-        } else {
-          setError('Something went wrong');
-        }
+        setError(err instanceof Error ? err.message : 'Something went wrong');
       } finally {
         setLoading(false);
       }
@@ -81,11 +87,7 @@ const DocumentListScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
   // 🗑️ Delete handler
   const handleDelete = async (id: string) => {
     if (!profile?.id) return;
-
-    const confirmDelete = window.confirm(
-      'Are you sure you want to delete this document?'
-    );
-    if (!confirmDelete) return;
+    if (!window.confirm('Are you sure you want to delete this document?')) return;
 
     try {
       const res = await fetch(`/api/documents/${id}?userId=${profile.id}`, {
@@ -94,20 +96,13 @@ const DocumentListScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        const message =
-          typeof data === 'object' && data && 'error' in data
-            ? (data as { error?: string }).error
-            : undefined;
-        throw new Error(message || 'Failed to delete document');
+        throw new Error(data.error || 'Failed to delete document');
       }
 
-      // Remove from local state
       setDocuments((prev) => prev.filter((doc) => doc.id !== id));
     } catch (err) {
       console.error(err);
-      const message =
-        err instanceof Error ? err.message : 'Failed to delete document';
-      alert(message);
+      alert(err instanceof Error ? err.message : 'Failed to delete document');
     }
   };
 
@@ -120,7 +115,7 @@ const DocumentListScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
     setEditError(null);
   };
 
-  // 💾 Save edit (metadata + optional new file)
+  // 💾 Save edit
   const handleSaveEdit = async () => {
     if (!profile?.id || !editingDoc) return;
 
@@ -130,27 +125,18 @@ const DocumentListScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
 
       let newStoragePath = editingDoc.storage_path;
 
-      // If user picked a new file → upload to Supabase and get new storagePath
       if (editFile) {
         const userId = profile.id;
         const safeFileName = editFile.name.replace(/\s+/g, '_');
         newStoragePath = `${userId}/${crypto.randomUUID()}/${safeFileName}`;
 
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from('documents')
-          .upload(newStoragePath, editFile, {
-            upsert: false,
-          });
+          .upload(newStoragePath, editFile, { upsert: false });
 
-        if (uploadError) {
-          console.error('Replace upload error =>', uploadError);
-          throw new Error(uploadError.message || 'File upload failed');
-        }
-
-        console.log('✅ replace upload finished =>', uploadData);
+        if (uploadError) throw new Error(uploadError.message || 'File upload failed');
       }
 
-      // Call PATCH API to update document
       const res = await fetch(
         `/api/documents/${editingDoc.id}?userId=${profile.id}`,
         {
@@ -159,7 +145,6 @@ const DocumentListScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
           body: JSON.stringify({
             title: editTitle,
             expiryDate: editExpiryDate,
-            // keep same document_type for now; you can add a field if you want to edit it
             storagePath: newStoragePath,
           }),
         }
@@ -167,30 +152,21 @@ const DocumentListScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        const message =
-          typeof data === 'object' && data && 'error' in data
-            ? (data as { error?: string }).error
-            : undefined;
-        throw new Error(message || 'Failed to update document');
+        throw new Error(data.error || 'Failed to update document');
       }
 
-      // Refresh from server so status + signedUrl are correct
       await fetchDocuments(profile.id);
       setEditingDoc(null);
     } catch (err) {
-      console.error('❗ handleSaveEdit error =>', err);
-      if (err instanceof Error) {
-        setEditError(err.message || 'Something went wrong');
-      } else {
-        setEditError('Something went wrong');
-      }
+      console.error('handleSaveEdit error =>', err);
+      setEditError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
       setSavingEdit(false);
     }
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-purple-50 pb-20">
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 pb-20">
       <Header
         title="Your Documents"
         onBack={() => showScreen('dashboard')}
@@ -200,155 +176,218 @@ const DocumentListScreen: React.FC<ScreenProps> = ({ showScreen, profile }) => {
       />
 
       <div className="p-6 flex-1 max-w-3xl mx-auto w-full">
-        {loading && <p className="text-gray-600">Loading documents...</p>}
-        {error && !loading && (
-          <p className="text-red-600 text-sm mb-4">{error}</p>
-        )}
+        {/* Glass Container */}
+        <div className="bg-white/80 backdrop-blur-xl rounded-[32px] p-6 shadow-xl ring-1 ring-white/60 mb-8 min-h-[300px]">
+            
+            <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                    <FileText className="text-purple-600" />
+                    Stored Files
+                </h3>
+                <span className="text-sm text-gray-500 font-medium bg-white px-3 py-1 rounded-full shadow-sm border border-gray-100">
+                    {documents.length} Items
+                </span>
+            </div>
 
-        {!loading && documents.length === 0 && !error && (
-          <p className="text-gray-600 text-sm">
-            You don&apos;t have any documents yet. Upload one to get started.
-          </p>
-        )}
-
-        <div className="space-y-3 mt-2">
-          {documents.map((doc) => {
-            const styles = statusStyles[doc.status];
-            const dateColor =
-              doc.status === 'expired'
-                ? 'text-red-600'
-                : doc.status === 'expiring'
-                ? 'text-orange-600'
-                : 'text-green-600';
-
-            return (
-              <div
-                key={doc.id}
-                className="flex items-center justify-between p-4 bg-white rounded-xl shadow-md border border-gray-200"
-              >
-                <div className="flex flex-col">
-                  <strong className="text-gray-900">{doc.title}</strong>
-                  <span className={`text-sm mt-1 ${dateColor}`}>
-                    • Expires: {doc.expiry_date || 'N/A'}
-                  </span>
-                  {doc.url && (
-                    <button
-                      className="mt-2 text-xs underline text-blue-600 hover:text-blue-800 text-left"
-                      onClick={() => {
-                        if (doc.url) {
-                          window.open(doc.url, '_blank');
-                        }
-                      }}
-                    >
-                      View document
-                    </button>
-                  )}
+            {loading && (
+                <div className="flex flex-col items-center justify-center h-40 text-gray-400">
+                    <Loader2 className="w-8 h-8 animate-spin mb-2 text-purple-500" />
+                    <p>Loading documents...</p>
                 </div>
+            )}
 
-                <div className="flex items-center gap-3">
-                  <span
-                    className={`px-3 py-1 text-xs font-semibold rounded-full ${styles.bg} ${styles.text}`}
-                  >
-                    {styles.label}
-                  </span>
+            {error && !loading && (
+             <div className="p-4 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm flex items-center gap-2">
+                <AlertCircle className="w-4 h-4" />
+                {error}
+             </div>
+            )}
 
-                  <button
-                    onClick={() => startEdit(doc)}
-                    className="text-xs text-blue-600 hover:text-blue-800 underline"
-                  >
-                    Edit
-                  </button>
-
-                  <button
-                    onClick={() => handleDelete(doc.id)}
-                    className="text-xs text-red-600 hover:text-red-800 underline"
-                  >
-                    Delete
-                  </button>
+            {!loading && documents.length === 0 && !error && (
+            <div className="flex flex-col items-center justify-center py-10 text-center">
+                <div className="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center mb-4">
+                    <UploadCloud className="w-8 h-8 text-purple-300" />
                 </div>
-              </div>
-            );
-          })}
+                <p className="text-gray-900 font-semibold text-lg">No documents yet</p>
+                <p className="text-gray-500 text-sm mt-1 max-w-xs">
+                Upload your passports, visas, or tickets to keep them safe and handy.
+                </p>
+            </div>
+            )}
+
+            <div className="space-y-4">
+            {documents.map((doc) => {
+                const styles = statusStyles[doc.status];
+                return (
+                <div
+                    key={doc.id}
+                    className="group relative flex flex-col sm:flex-row sm:items-center justify-between p-5 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 hover:border-purple-100"
+                >
+                    <div className="flex items-start gap-4 mb-4 sm:mb-0">
+                        {/* Icon Box */}
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${doc.status === 'valid' ? 'bg-purple-50 text-purple-600' : styles.bg}`}>
+                            <FileText className={`w-6 h-6 ${doc.status === 'valid' ? 'text-purple-600' : styles.text}`} />
+                        </div>
+                        
+                        <div>
+                            <h4 className="font-bold text-gray-900 text-lg leading-tight mb-1">{doc.title}</h4>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${styles.bg} ${styles.text} ${styles.border}`}>
+                                    {styles.label}
+                                </span>
+                                <span className="text-xs text-gray-400 flex items-center gap-1">
+                                    <Calendar className="w-3 h-3" />
+                                    Expires: {doc.expiry_date || 'N/A'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 sm:self-center self-end">
+                        {doc.url && (
+                            <button
+                            onClick={() => window.open(doc.url!, '_blank')}
+                            className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                            title="View"
+                            >
+                                <ExternalLink className="w-5 h-5" />
+                            </button>
+                        )}
+
+                        <button
+                            onClick={() => startEdit(doc)}
+                            className="p-2 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                            title="Edit"
+                        >
+                            <Edit2 className="w-5 h-5" />
+                        </button>
+
+                        <button
+                            onClick={() => handleDelete(doc.id)}
+                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Delete"
+                        >
+                            <Trash2 className="w-5 h-5" />
+                        </button>
+                    </div>
+                </div>
+                );
+            })}
+            </div>
         </div>
 
+        {/* Upload Button */}
         <button
-          className="w-full mt-6 py-3 bg-yellow-400 text-gray-900 font-bold rounded-xl shadow-md hover:bg-yellow-500"
-          onClick={() => showScreen('uploadForm')}
+            className="
+            group relative w-full overflow-hidden rounded-[24px] 
+            bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 
+            bg-[length:200%_auto] p-5 shadow-xl shadow-indigo-500/30 
+            transition-all duration-500 
+            hover:bg-right hover:shadow-2xl hover:shadow-purple-500/40 hover:-translate-y-1 
+            active:scale-[0.98]
+            "
+            onClick={() => showScreen('uploadForm')}
         >
-          Upload New Document
+             <div className="relative flex items-center justify-center gap-3">
+                 <div className="p-2 bg-white/20 rounded-full backdrop-blur-sm group-hover:bg-white/30 transition-colors">
+                    <Plus className="w-6 h-6 text-white" strokeWidth={3} />
+                 </div>
+                 <span className="text-xl font-bold text-white tracking-wide">
+                    Upload New Document
+                 </span>
+            </div>
         </button>
       </div>
 
       {/* ✏️ Edit Modal */}
       {editingDoc && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md border border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">
-              Edit Document
-            </h2>
-
-            {editError && (
-              <p className="text-red-600 text-sm mb-2">{editError}</p>
-            )}
-
-            <div className="space-y-3">
-              {/* Title */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Document Name
-                </label>
-                <input
-                  type="text"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                />
-              </div>
-
-              {/* Expiry date */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Expiry Date
-                </label>
-                <input
-                  type="date"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                  value={editExpiryDate || ''}
-                  onChange={(e) => setEditExpiryDate(e.target.value)}
-                />
-              </div>
-
-              {/* Optional new file */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Replace File (optional)
-                </label>
-                <input
-                  type="file"
-                  className="w-full text-sm"
-                  onChange={(e) => setEditFile(e.target.files?.[0] || null)}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Leave this empty if you only want to change the name or expiry
-                  date.
-                </p>
-              </div>
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+          <div className="bg-white rounded-[32px] shadow-2xl w-full max-w-md border border-white/50 overflow-hidden animation-fade-in-up">
+            
+            {/* Modal Header */}
+            <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                <h2 className="text-xl font-bold text-gray-800">Edit Document</h2>
+                <button 
+                    onClick={() => setEditingDoc(null)}
+                    className="p-2 bg-white rounded-full text-gray-400 hover:text-gray-600 shadow-sm border border-gray-100 hover:bg-gray-50"
+                >
+                    <X className="w-5 h-5" />
+                </button>
             </div>
 
-            <div className="flex justify-end gap-2 mt-5">
+            <div className="p-6 space-y-5">
+                {editError && (
+                 <div className="p-3 bg-red-50 text-red-600 text-sm rounded-xl flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4" />
+                    {editError}
+                 </div>
+                )}
+
+                {/* Title */}
+                <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1.5 ml-1">Document Name</label>
+                    <input
+                    type="text"
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900 focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all outline-none"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    placeholder="e.g. My Passport"
+                    />
+                </div>
+
+                {/* Expiry date */}
+                <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1.5 ml-1">Expiry Date</label>
+                    <input
+                    type="date"
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900 focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all outline-none"
+                    value={editExpiryDate || ''}
+                    onChange={(e) => setEditExpiryDate(e.target.value)}
+                    />
+                </div>
+
+                {/* File Replace */}
+                <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1.5 ml-1">Replace File (Optional)</label>
+                    <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 border-dashed rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
+                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                            {editFile ? (
+                                <p className="text-sm text-purple-600 font-semibold">{editFile.name}</p>
+                            ) : (
+                                <>
+                                    <UploadCloud className="w-6 h-6 text-gray-400 mb-1" />
+                                    <p className="text-xs text-gray-500">Click to replace file</p>
+                                </>
+                            )}
+                        </div>
+                        <input 
+                            type="file" 
+                            className="hidden" 
+                            onChange={(e) => setEditFile(e.target.files?.[0] || null)}
+                        />
+                    </label>
+                </div>
+            </div>
+
+            {/* Footer Actions */}
+            <div className="p-6 pt-2 flex gap-3">
               <button
-                className="px-3 py-2 text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100"
+                className="flex-1 py-3.5 text-sm font-bold rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
                 onClick={() => setEditingDoc(null)}
                 disabled={savingEdit}
               >
                 Cancel
               </button>
               <button
-                className="px-4 py-2 text-sm rounded-lg bg-yellow-400 text-gray-900 font-semibold hover:bg-yellow-500 disabled:opacity-60"
+                className="flex-1 py-3.5 text-sm font-bold rounded-xl bg-gray-900 text-white shadow-lg hover:bg-gray-800 hover:shadow-xl transition-all disabled:opacity-70 disabled:cursor-not-allowed"
                 onClick={handleSaveEdit}
                 disabled={savingEdit}
               >
-                {savingEdit ? 'Saving...' : 'Save changes'}
+                {savingEdit ? (
+                    <span className="flex items-center justify-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin" /> Saving...
+                    </span>
+                ) : 'Save Changes'}
               </button>
             </div>
           </div>
