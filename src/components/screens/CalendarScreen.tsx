@@ -12,7 +12,7 @@ const CalendarScreen: React.FC<ScreenProps> = ({
   // Note: For a real app, you might want to dynamically generate this based on the user's email if using GCal integration
   const calendarEmbedUrl =
     process.env.NEXT_PUBLIC_GOOGLE_CALENDAR_EMBED_URL ||
-    'https://calendar.google.com/calendar/embed?src=en.th%23holiday%40group.v.calendar.google.com&ctz=Asia%2FBangkok';
+    'https://calendar.google.com/calendar/embed?src=dcbd31606d61c4b8ca85b3adb8fe422f2d82b369b1ebb7c9649f75ea51097dc0%40group.calendar.google.com&ctz=Asia%2FBangkok';
 
   const handleOpenFullCalendar = () => {
     window.open('https://calendar.google.com/calendar/r', '_blank');
